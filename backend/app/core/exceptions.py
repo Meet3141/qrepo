@@ -16,9 +16,11 @@ async def app_exception_handler(request: Request, exc: AppException):
     response = APIResponse(success=False, message=exc.message)
     return JSONResponse(status_code=exc.status_code, content=response.model_dump())
 
+from fastapi.encoders import jsonable_encoder
+
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     logger.warning(f"Validation error on {request.url.path}: {exc.errors()}")
-    response = APIResponse(success=False, message="Validation error", data={"errors": exc.errors()})
+    response = APIResponse(success=False, message="Validation error", data={"errors": jsonable_encoder(exc.errors())})
     return JSONResponse(status_code=422, content=response.model_dump())
 
 async def global_exception_handler(request: Request, exc: Exception):
