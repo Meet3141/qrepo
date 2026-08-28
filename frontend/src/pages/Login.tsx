@@ -37,12 +37,22 @@ export const Login = () => {
 
       const token = data.data.access_token;
       
-      const payload = JSON.parse(atob(token.split('.')[1]));
+      const meResponse = await fetch('http://127.0.0.1:8000/api/v1/auth/me', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const meData = await meResponse.json();
+      
+      if (!meResponse.ok || !meData.success) {
+        throw new Error('Failed to fetch user profile');
+      }
       
       login(token, {
-        id: payload.sub,
-        email: email, 
-        role: { name: 'Verified User' } 
+        id: meData.data.id,
+        email: meData.data.email, 
+        role: { name: meData.data.role.name } 
       });
 
       navigate(from, { replace: true });

@@ -1,5 +1,5 @@
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import './Dashboard.css';
 
 export const Dashboard = () => {
@@ -11,10 +11,19 @@ export const Dashboard = () => {
     navigate('/login');
   };
 
+  const roleName = user?.role?.name;
+
   return (
     <div className="dashboard-container">
       <nav className="dashboard-nav">
         <div className="nav-brand">QRepo Dashboard</div>
+        <div className="nav-links">
+          <Link to="/dashboard">Home</Link>
+          {roleName === 'Admin' && <Link to="/admin">Admin Panel</Link>}
+          {roleName === 'HOD' && <Link to="/hod">HOD Portal</Link>}
+          {roleName === 'Faculty' && <Link to="/faculty">Faculty Tools</Link>}
+          {roleName === 'Student' && <Link to="/student">Student Hub</Link>}
+        </div>
         <div className="nav-profile">
           <span className="user-email">{user?.email}</span>
           <button onClick={handleLogout} className="logout-button">Logout</button>
@@ -28,6 +37,7 @@ export const Dashboard = () => {
           <div className="user-details">
             <p><strong>ID:</strong> {user?.id}</p>
             <p><strong>Email:</strong> {user?.email}</p>
+            <p><strong>Role:</strong> {roleName}</p>
             <p><strong>Status:</strong> Authenticated</p>
           </div>
         </div>

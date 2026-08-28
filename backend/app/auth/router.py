@@ -48,3 +48,24 @@ def login(
         message="Login successful",
         data=token
     )
+
+from app.api.dependencies import get_current_active_user
+from app.auth.models import User
+
+@router.get(
+    "/me",
+    response_model=APIResponse[UserResponse],
+    status_code=status.HTTP_200_OK,
+    summary="Get current user profile"
+)
+def get_current_user_profile(
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Get the currently authenticated user's profile and role.
+    """
+    return APIResponse(
+        success=True,
+        message="User profile retrieved",
+        data=current_user
+    )
