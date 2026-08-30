@@ -1,0 +1,142 @@
+.unit-list-section {
+  margin-top: 2rem;
+}
+
+.unit-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.unit-list-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #e2e8f0;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+.unit-add-btn {
+  padding: 0.45rem 1rem;
+  background: rgba(99, 102, 241, 0.12);
+  color: #a5b4fc;
+  border: 1px solid rgba(99, 102, 241, 0.22);
+  border-radius: 7px;
+  font-size: 0.825rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.unit-add-btn:hover {
+  background: rgba(99, 102, 241, 0.2);
+  border-color: rgba(99, 102, 241, 0.35);
+  color: #c7d2fe;
+}
+
+/* Unit list */
+.unit-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.unit-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  transition: all 0.15s ease;
+}
+
+.unit-item:hover {
+  background: rgba(255, 255, 255, 0.035);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+/* Unit number badge */
+.unit-number-badge {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(99, 102, 241, 0.15);
+  color: #a5b4fc;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  margin-top: 1px;
+}
+
+.unit-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.unit-title {
+  margin: 0 0 0.25rem;
+  font-size: 0.925rem;
+  font-weight: 600;
+  color: #e2e8f0;
+  line-height: 1.4;
+}
+
+.unit-description {
+  margin: 0;
+  font-size: 0.825rem;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+/* Unit action buttons */
+.unit-actions {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.unit-btn-edit,
+.unit-btn-delete {
+  padding: 0.3rem 0.7rem;
+  border-radius: 6px;
+  font-size: 0.775rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1px solid transparent;
+}
+
+.unit-btn-edit {
+  background: rgba(99, 102, 241, 0.08);
+  color: #818cf8;
+  border-color: rgba(99, 102, 241, 0.14);
+}
+
+.unit-btn-edit:hover {
+  background: rgba(99, 102, 241, 0.16);
+  border-color: rgba(99, 102, 241, 0.25);
+}
+
+.unit-btn-delete {
+  background: rgba(239, 68, 68, 0.07);
+  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.13);
+}
+
+.unit-btn-delete:hover {
+  background: rgba(239, 68, 68, 0.14);
+  border-color: rgba(239, 68, 68, 0.22);
+}

@@ -1,0 +1,50 @@
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  text-align: center;
+  gap: 0.75rem;
+}
+
+.empty-state-icon {
+  font-size: 3rem;
+  line-height: 1;
+  margin-bottom: 0.5rem;
+  opacity: 0.7;
+}
+
+.empty-state-title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.empty-state-message {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #64748b;
+  max-width: 360px;
+  line-height: 1.6;
+}
+
+.empty-state-action {
+  margin-top: 0.75rem;
+  padding: 0.6rem 1.5rem;
+  background: rgba(99, 102, 241, 0.12);
+  color: #a5b4fc;
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.empty-state-action:hover {
+  background: rgba(99, 102, 241, 0.2);
+  border-color: rgba(99, 102, 241, 0.4);
+  color: #c7d2fe;
+}

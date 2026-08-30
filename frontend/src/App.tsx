@@ -5,59 +5,80 @@ import { RoleProtectedRoute } from './components/RoleProtectedRoute';
 import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
 import { DummyPage } from './pages/DummyPage';
+import { SubjectList } from './pages/subjects/SubjectList';
+import { SubjectDetail } from './pages/subjects/SubjectDetail';
 
 function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
         <Routes>
+          {/* Public */}
           <Route path="/login" element={<Login />} />
-          
-          {/* Protected Routes */}
-          <Route 
-            path="/dashboard" 
+
+          {/* Protected — any authenticated role */}
+          <Route
+            path="/dashboard"
             element={
               <ProtectedRoute>
                 <Dashboard />
               </ProtectedRoute>
-            } 
+            }
           />
 
-          {/* Role Protected Routes */}
-          <Route 
-            path="/admin" 
+          {/* Subject Management — all authenticated roles */}
+          <Route
+            path="/subjects"
+            element={
+              <ProtectedRoute>
+                <SubjectList />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/subjects/:id"
+            element={
+              <ProtectedRoute>
+                <SubjectDetail />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Role Protected Routes (DummyPages kept for future sprint use) */}
+          <Route
+            path="/admin"
             element={
               <RoleProtectedRoute allowedRoles={['Admin']}>
                 <DummyPage title="Admin Panel" />
               </RoleProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path="/hod" 
+          <Route
+            path="/hod"
             element={
               <RoleProtectedRoute allowedRoles={['HOD', 'Admin']}>
                 <DummyPage title="HOD Portal" />
               </RoleProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path="/faculty" 
+          <Route
+            path="/faculty"
             element={
               <RoleProtectedRoute allowedRoles={['Faculty', 'HOD', 'Admin']}>
                 <DummyPage title="Faculty Tools" />
               </RoleProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path="/student" 
+          <Route
+            path="/student"
             element={
               <RoleProtectedRoute allowedRoles={['Student']}>
                 <DummyPage title="Student Hub" />
               </RoleProtectedRoute>
-            } 
+            }
           />
-          
-          {/* Redirect root to dashboard */}
+
+          {/* Root redirect */}
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </BrowserRouter>

@@ -1,0 +1,31 @@
+.spinner-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 2rem;
+}
+
+.spinner-ring {
+  border-radius: 50%;
+  border-style: solid;
+  border-color: rgba(99, 102, 241, 0.2);
+  border-top-color: #6366f1;
+  animation: spin 0.7s linear infinite;
+}
+
+/* Size variants */
+.spinner-sm .spinner-ring { width: 20px; height: 20px; border-width: 2px; }
+.spinner-md .spinner-ring { width: 36px; height: 36px; border-width: 3px; }
+.spinner-lg .spinner-ring { width: 52px; height: 52px; border-width: 4px; }
+
+.spinner-label {
+  font-size: 0.85rem;
+  color: #64748b;
+  letter-spacing: 0.02em;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

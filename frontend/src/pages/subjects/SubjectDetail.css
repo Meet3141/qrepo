@@ -1,0 +1,156 @@
+/* SubjectDetail page */
+
+.sd-page {
+  padding-bottom: 3rem;
+  max-width: 860px;
+}
+
+/* ── Back button ── */
+
+.sd-back-btn {
+  background: none;
+  border: none;
+  color: #64748b;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: 1.5rem;
+  transition: color 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.sd-back-btn:hover {
+  color: #a5b4fc;
+}
+
+/* ── Loading ── */
+
+.sd-loading {
+  display: flex;
+  justify-content: center;
+  padding: 4rem 0;
+}
+
+/* ── Subject header card ── */
+
+.sd-header-card {
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 16px;
+  padding: 1.75rem 2rem;
+  margin-bottom: 1.5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Gradient strip at the top */
+.sd-header-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #6366f1, #8b5cf6, #a855f7);
+}
+
+.sd-header-top {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.875rem;
+  flex-wrap: wrap;
+}
+
+.sd-code-pill {
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 0.2rem 0.7rem;
+  background: rgba(99, 102, 241, 0.12);
+  color: #a5b4fc;
+  border: 1px solid rgba(99, 102, 241, 0.22);
+  border-radius: 20px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+.sd-faculty-badge {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 0.18rem 0.55rem;
+  background: rgba(16, 185, 129, 0.1);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.18);
+  border-radius: 20px;
+}
+
+.sd-subject-name {
+  margin: 0 0 0.625rem;
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #f1f5f9;
+  letter-spacing: -0.4px;
+  line-height: 1.2;
+}
+
+.sd-subject-desc {
+  margin: 0 0 1.25rem;
+  font-size: 0.925rem;
+  color: #64748b;
+  line-height: 1.65;
+  max-width: 600px;
+}
+
+/* Metadata row */
+.sd-meta-row {
+  display: flex;
+  gap: 2rem;
+  flex-wrap: wrap;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.sd-meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.sd-meta-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #475569;
+}
+
+.sd-meta-value {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+.sd-mono {
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 0.775rem;
+  color: #64748b;
+  word-break: break-all;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .sd-header-card {
+    padding: 1.25rem;
+  }
+
+  .sd-subject-name {
+    font-size: 1.3rem;
+  }
+
+  .sd-meta-row {
+    gap: 1.25rem;
+  }
+}

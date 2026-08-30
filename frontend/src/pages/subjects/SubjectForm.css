@@ -1,0 +1,206 @@
+/* SubjectForm / UnitForm — shared modal form styles */
+
+.sf-overlay,
+.uf-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+  animation: overlay-in 0.15s ease;
+}
+
+.sf-card,
+.uf-card {
+  background: #161928;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 1.75rem;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: 0 32px 64px rgba(0, 0, 0, 0.6);
+  animation: card-in 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Header */
+.sf-header,
+.uf-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+}
+
+.sf-title,
+.uf-title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+
+.sf-close,
+.uf-close {
+  background: none;
+  border: none;
+  color: #64748b;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0.2rem 0.4rem;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+
+.sf-close:hover,
+.uf-close:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #e2e8f0;
+}
+
+/* Form fields */
+.sf-form,
+.uf-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.sf-field,
+.uf-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.sf-field label,
+.uf-field label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.sf-required {
+  color: #f87171;
+}
+
+.sf-optional {
+  color: #475569;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.sf-field input,
+.sf-field textarea,
+.uf-field input,
+.uf-field textarea {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 0.65rem 0.875rem;
+  color: #e2e8f0;
+  font-size: 0.9rem;
+  font-family: inherit;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  resize: vertical;
+}
+
+.sf-field input:focus,
+.sf-field textarea:focus,
+.uf-field input:focus,
+.uf-field textarea:focus {
+  outline: none;
+  border-color: rgba(99, 102, 241, 0.5);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+}
+
+.sf-field input::placeholder,
+.sf-field textarea::placeholder,
+.uf-field input::placeholder,
+.uf-field textarea::placeholder {
+  color: #334155;
+}
+
+.sf-field input:disabled,
+.sf-field textarea:disabled,
+.uf-field input:disabled,
+.uf-field textarea:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Action buttons */
+.sf-actions,
+.uf-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  margin-top: 0.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.sf-btn-cancel,
+.uf-btn-cancel {
+  padding: 0.6rem 1.25rem;
+  background: rgba(255, 255, 255, 0.05);
+  color: #94a3b8;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.sf-btn-cancel:hover:not(:disabled),
+.uf-btn-cancel:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.09);
+  color: #e2e8f0;
+}
+
+.sf-btn-save,
+.uf-btn-save {
+  padding: 0.6rem 1.5rem;
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+}
+
+.sf-btn-save:hover:not(:disabled),
+.uf-btn-save:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.45);
+}
+
+.sf-btn-cancel:disabled,
+.sf-btn-save:disabled,
+.uf-btn-cancel:disabled,
+.uf-btn-save:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+@keyframes overlay-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes card-in {
+  from { opacity: 0; transform: scale(0.94) translateY(-10px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0); }
+}
