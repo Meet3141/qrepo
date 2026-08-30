@@ -26,6 +26,8 @@ class User(Base, TimestampMixin):
     
     role_id: Mapped[Optional[int]] = mapped_column(ForeignKey("roles.id"))
     role: Mapped[Optional["Role"]] = relationship(back_populates="users")
+    
+    subjects: Mapped[List["app.subject.models.Subject"]] = relationship("app.subject.models.Subject", back_populates="faculty")
 
     def __repr__(self) -> str:
         return f"<User(id={self.id}, email='{self.email}')>"

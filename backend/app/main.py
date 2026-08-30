@@ -7,6 +7,10 @@ import logging
 from app.api.router import api_router
 from app.core.exceptions import global_exception_handler, app_exception_handler, validation_exception_handler, AppException
 
+# Pre-load models into SQLAlchemy registry
+from app.auth.models import User, Role
+from app.subject.models import Subject, Unit
+
 logger = logging.getLogger("qrepo")
 
 app = FastAPI(title="QRepo API")

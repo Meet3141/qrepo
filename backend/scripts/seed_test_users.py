@@ -4,6 +4,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../'
 
 from app.db.session import SessionLocal
 from app.auth.models import User, Role
+from app.subject.models import Subject, Unit
 from app.auth.repository import UserRepository
 from app.auth.constants import ROLE_ADMIN, ROLE_HOD, ROLE_FACULTY, ROLE_STUDENT
 from app.core.security import get_password_hash
