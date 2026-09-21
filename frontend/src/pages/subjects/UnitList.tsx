@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import type { Unit } from '../../types/subject';
 import { EmptyState } from '../../components/ui/EmptyState';
 import './UnitList.css';
@@ -22,6 +23,7 @@ export const UnitList = ({
   onEdit,
   onDelete,
 }: UnitListProps) => {
+  const navigate = useNavigate();
   const sorted = [...units].sort((a, b) => a.unit_number - b.unit_number);
 
   return (
@@ -64,24 +66,33 @@ export const UnitList = ({
               </div>
 
               {/* Actions */}
-              {canManage && (
-                <div className="unit-actions">
-                  <button
-                    className="unit-btn-edit"
-                    onClick={() => onEdit(unit)}
-                    aria-label={`Edit unit ${unit.unit_number}`}
-                  >
-                    Edit
-                  </button>
-                  <button
-                    className="unit-btn-delete"
-                    onClick={() => onDelete(unit)}
-                    aria-label={`Delete unit ${unit.unit_number}`}
-                  >
-                    Delete
-                  </button>
-                </div>
-              )}
+              <div className="unit-actions">
+                <button
+                  className="unit-btn-docs"
+                  onClick={() => navigate(`/subjects/${unit.subject_id}/units/${unit.id}/documents`)}
+                  aria-label={`Documents for unit ${unit.unit_number}`}
+                >
+                  {canManage ? 'Manage Documents' : 'View Documents'}
+                </button>
+                {canManage && (
+                  <>
+                    <button
+                      className="unit-btn-edit"
+                      onClick={() => onEdit(unit)}
+                      aria-label={`Edit unit ${unit.unit_number}`}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      className="unit-btn-delete"
+                      onClick={() => onDelete(unit)}
+                      aria-label={`Delete unit ${unit.unit_number}`}
+                    >
+                      Delete
+                    </button>
+                  </>
+                )}
+              </div>
             </li>
           ))}
         </ol>

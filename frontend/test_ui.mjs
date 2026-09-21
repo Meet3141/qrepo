@@ -81,6 +81,35 @@ async function runTests() {
     await page.click('button.uf-btn-save');
     await page.waitForSelector('.unit-title:has-text("Unit 1")');
     
+    // Manage Documents
+    await page.click('.unit-btn-docs');
+    await page.waitForURL(/\/subjects\/.+\/units\/.+\/documents/);
+    await page.waitForSelector('.ud-title:has-text("Unit 1")');
+    
+    // Upload Document
+    // We create a dummy file to upload
+    const fs = await import('fs/promises');
+    await fs.writeFile('test_doc.txt', 'Hello Document API');
+    await page.setInputFiles('input#file-upload', 'test_doc.txt');
+    await page.click('.doc-upload-btn');
+    await page.waitForSelector('.doc-name:has-text("test_doc.txt")');
+    
+    // Edit Document
+    await page.click('.doc-btn-edit');
+    await page.fill('.doc-edit-input', 'renamed_doc.txt');
+    await page.click('.doc-btn-save');
+    await page.waitForSelector('.doc-name:has-text("renamed_doc.txt")');
+    
+    // Delete Document
+    await page.click('.doc-btn-delete');
+    await page.click('.confirm-danger');
+    await page.waitForSelector('.doc-name:has-text("renamed_doc.txt")', { state: 'detached' });
+    await fs.unlink('test_doc.txt');
+    
+    // Go back to Subject
+    await page.click('.ud-back-btn');
+    await page.waitForSelector('.sd-subject-name');
+    
     // Edit Unit
     await page.click('.unit-btn-edit');
     await page.fill('input#uf-title', 'Unit 1 Edited');
@@ -190,6 +219,20 @@ async function runTests() {
     
     let unitEditBtns = await page.$$('.unit-btn-edit');
     assert.strictEqual(unitEditBtns.length, 0, 'Student should not see unit edit buttons');
+    
+    // Check documents for Student (should be view only)
+    await page.click('.unit-btn-docs');
+    await page.waitForURL(/\/subjects\/.+\/units\/.+\/documents/);
+    await page.waitForSelector('.ud-title:has-text("Fac Unit")');
+    
+    let uploadBtn = await page.$('.doc-upload-btn');
+    assert.strictEqual(uploadBtn, null, 'Student should not see upload button');
+    
+    let docEditBtns = await page.$$('.doc-btn-edit');
+    assert.strictEqual(docEditBtns.length, 0, 'Student should not see document edit buttons');
+    
+    let docDeleteBtns = await page.$$('.doc-btn-delete');
+    assert.strictEqual(docDeleteBtns.length, 0, 'Student should not see document delete buttons');
     
     await logout();
     console.log('Student UI PASS');

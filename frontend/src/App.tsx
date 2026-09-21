@@ -7,6 +7,7 @@ import { Dashboard } from './pages/Dashboard';
 import { DummyPage } from './pages/DummyPage';
 import { SubjectList } from './pages/subjects/SubjectList';
 import { SubjectDetail } from './pages/subjects/SubjectDetail';
+import { UnitDocuments } from './pages/documents/UnitDocuments';
 
 function App() {
   return (
@@ -40,6 +41,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <SubjectDetail />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/subjects/:subjectId/units/:unitId/documents"
+            element={
+              <ProtectedRoute>
+                <UnitDocuments />
               </ProtectedRoute>
             }
           />

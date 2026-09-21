@@ -93,7 +93,13 @@ export async function apiFetch<T>(
 
   // Allow callers to override / extend headers if needed
   if (options.headers) {
-    Object.assign(headers, options.headers);
+    for (const [key, value] of Object.entries(options.headers)) {
+      if (value === '' || value === undefined || value === null) {
+        delete headers[key];
+      } else {
+        headers[key] = value as string;
+      }
+    }
   }
 
   const response = await fetch(`${BASE_URL}${path}`, {
