@@ -14,3 +14,8 @@ def get_document_service(db: Session = Depends(get_db)) -> DocumentService:
 
 def get_document_storage() -> DocumentStorage:
     return DocumentStorage()
+
+def get_ingestion_service(db: Session = Depends(get_db)) -> "DocumentIngestionService":
+    from app.document.ingestion import DocumentIngestionService
+    document_repo = DocumentRepository(db)
+    return DocumentIngestionService(document_repo)

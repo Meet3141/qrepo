@@ -8,6 +8,7 @@ from app.subject.models import Subject, Unit
 from app.auth.repository import UserRepository
 from app.auth.constants import ROLE_ADMIN, ROLE_HOD, ROLE_FACULTY, ROLE_STUDENT
 from app.core.security import get_password_hash
+from app.document.models import Document  # Required for mapper initialization
 
 def seed_users():
     db = SessionLocal()

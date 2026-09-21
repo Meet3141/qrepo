@@ -7,7 +7,7 @@ from app.auth.models import User
 from app.document.schemas import DocumentResponse, DocumentUpdate
 from app.document.service import DocumentService
 from app.document.storage import DocumentStorage
-from app.document.dependencies import get_document_service, get_document_storage
+from app.document.dependencies import get_document_service, get_document_storage, get_ingestion_service
 from app.shared.responses import APIResponse
 from app.core.exceptions import AppException
 
@@ -131,3 +131,21 @@ def delete_document(
     service.delete_document(document_id, current_user)
     
     return APIResponse(success=True, message="Document deleted")
+
+@document_router.post(
+    "/{document_id}/process",
+    response_model=APIResponse[DocumentResponse],
+    summary="Trigger ingestion process for a Document"
+)
+def process_document(
+    document_id: uuid.UUID,
+    current_user: User = Depends(RequireRole([ROLE_ADMIN, ROLE_HOD, ROLE_FACULTY])),
+    service: DocumentService = Depends(get_document_service),
+    ingestion_service = Depends(get_ingestion_service)
+):
+    document = service.get_document(document_id)
+    service._verify_faculty_ownership(document.unit_id, current_user)
+    
+    processed_doc = ingestion_service.ingest_document(document_id)
+    response_data = DocumentResponse.model_validate(processed_doc)
+    return APIResponse(success=True, message="Document processed", data=response_data)

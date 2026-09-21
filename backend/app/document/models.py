@@ -1,5 +1,6 @@
 import uuid
-from sqlalchemy import String, ForeignKey, Uuid, Integer
+from datetime import datetime
+from sqlalchemy import String, ForeignKey, Uuid, Integer, DateTime
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base, TimestampMixin
 
@@ -13,6 +14,8 @@ class Document(Base, TimestampMixin):
     file_size: Mapped[int] = mapped_column(Integer, nullable=False)
     storage_path: Mapped[str] = mapped_column(String(500), nullable=False)
     processing_status: Mapped[str] = mapped_column(String(50), nullable=False, default="PENDING")
+    extracted_text: Mapped[str | None] = mapped_column(String, nullable=True)
+    processed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     
     uploaded_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True, nullable=False)
     
