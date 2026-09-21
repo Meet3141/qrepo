@@ -24,6 +24,7 @@ from app.core.config import settings
 from app.db.base import Base
 from app.auth.models import Role, User
 from app.subject.models import Subject, Unit
+from app.document.models import Document
 
 target_metadata = Base.metadata
 escaped_url = str(settings.DATABASE_URL).replace('%', '%%')

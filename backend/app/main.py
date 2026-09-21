@@ -5,6 +5,7 @@ from fastapi.exceptions import RequestValidationError
 import logging
 
 from app.api.router import api_router
+from app.document import models as document_models # Register models for SQLAlchemy
 from app.core.exceptions import global_exception_handler, app_exception_handler, validation_exception_handler, AppException
 
 # Pre-load models into SQLAlchemy registry

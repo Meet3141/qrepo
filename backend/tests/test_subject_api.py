@@ -13,6 +13,7 @@ from app.db.session import SessionLocal
 from app.auth.models import User, Role
 from app.auth.repository import UserRepository
 from app.subject.repository import SubjectRepository
+from app.document.models import Document
 from app.auth.constants import ROLE_ADMIN, ROLE_HOD, ROLE_FACULTY, ROLE_STUDENT
 from app.core.security import get_password_hash
 

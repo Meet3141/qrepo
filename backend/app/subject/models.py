@@ -31,6 +31,7 @@ class Unit(Base, TimestampMixin):
     description: Mapped[Optional[str]] = mapped_column(String(500))
 
     subject: Mapped["Subject"] = relationship(back_populates="units")
+    documents: Mapped[List["app.document.models.Document"]] = relationship("app.document.models.Document", back_populates="unit", cascade="all, delete-orphan")
     
     def __repr__(self) -> str:
         return f"<Unit(id={self.id}, unit_number={self.unit_number}, title='{self.title}')>"
