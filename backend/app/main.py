@@ -11,10 +11,24 @@ from app.core.exceptions import global_exception_handler, app_exception_handler,
 # Pre-load models into SQLAlchemy registry
 from app.auth.models import User, Role
 from app.subject.models import Subject, Unit
+from app.ai import models as ai_models  # noqa: F401  (AI generations, drafts, feedback)
+
+from contextlib import asynccontextmanager
+from app.ai import get_provider
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Pre-warm the AI provider on startup to catch config errors early
+    try:
+        provider = get_provider()
+        logger.info("AI provider ready: %r (model=%s)", provider.name, provider.model)
+    except Exception as exc:
+        logger.warning("AI provider not configured at startup: %s", exc)
+    yield
 
 logger = logging.getLogger("qrepo")
 
-app = FastAPI(title="QRepo API")
+app = FastAPI(title="QRepo API", lifespan=lifespan)
 
 # Setup CORS
 app.add_middleware(
@@ -37,7 +51,9 @@ app.include_router(api_router, prefix="/api/v1")
 async def favicon():
     return Response(content=b"", media_type="image/x-icon")
 
-@app.get("/")
-def root():
-    logger.info("Root endpoint accessed")
-    return {"message": "QRepo Backend Running"}
+
+
+
+
+
+

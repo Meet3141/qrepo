@@ -11,7 +11,9 @@ class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(
         env_file=".env",
-        case_sensitive=True
+        case_sensitive=True,
+        # .env is shared with other settings classes (e.g. app.ai.config); ignore their keys
+        extra="ignore"
     )
 
 
