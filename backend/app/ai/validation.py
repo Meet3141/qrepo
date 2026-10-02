@@ -32,12 +32,6 @@ EXPECTED_ANSWER_BOUNDS = {
     QuestionType.SHORT_ANSWER: (5, 1000),
     QuestionType.LONG_ANSWER: (50, 6000),
 }
-MARKS_BOUNDS = {
-    QuestionType.MCQ: (0.5, 5),
-    QuestionType.TRUE_FALSE: (0.5, 2),
-    QuestionType.SHORT_ANSWER: (1, 10),
-    QuestionType.LONG_ANSWER: (5, 30),
-}
 # Normalized-text similarity at or above this is treated as a near-duplicate
 NEAR_DUPLICATE_THRESHOLD = 0.88
 MAX_REPORTED_ISSUES = 25
@@ -107,11 +101,6 @@ def validate_question(q: GeneratedQuestion, index: int = 0) -> List[ValidationIs
                               QUESTION_TEXT_MIN_CHARS, QUESTION_TEXT_MAX_CHARS, index)
         if issue:
             issues.append(issue)
-
-    lo, hi = MARKS_BOUNDS[q.question_type]
-    if not lo <= q.marks <= hi:
-        issues.append(ValidationIssue(
-            "MARKS_OUT_OF_RANGE", f"marks must be between {lo:g} and {hi:g} for {q.question_type.value} (got {q.marks:g})", index))
 
     if q.explanation is not None and len(q.explanation.strip()) > EXPLANATION_MAX_CHARS:
         issues.append(ValidationIssue(
@@ -207,6 +196,10 @@ class QuestionValidationEngine:
                 if got != want:
                     issues.append(ValidationIssue(
                         f"{name.upper()}_MISMATCH", f"{name} must be {want.value} (got {got.value})", i))
+            
+            if q.marks != request.marks_per_question:
+                issues.append(ValidationIssue("MARKS_MISMATCH", f"marks must be exactly {request.marks_per_question:g} (got {q.marks:g})", i))
+
             if not topics_match(q.topic, request.topic):
                 issues.append(ValidationIssue("TOPIC_MISMATCH", "topic must repeat the requested topic verbatim", i))
             issues.extend(validate_question(q, i))

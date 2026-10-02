@@ -119,16 +119,13 @@ class GeminiProvider(AIProvider):
         return f"GeminiProvider(model={self.model!r})"
 
     def _generation_config(self, prompt: BuiltPrompt) -> genai_types.GenerateContentConfig:
-        # Strip 'additionalProperties' from the schema — Pydantic v2 extra='forbid'
-        # adds this field but the Gemini API rejects it with INVALID_ARGUMENT 400.
-        clean_schema = _strip_additional_properties(GeneratedQuestionBatch.model_json_schema())
         return genai_types.GenerateContentConfig(
             system_instruction=prompt.system_instruction,
             temperature=self.temperature,
             max_output_tokens=self.max_output_tokens,
             candidate_count=1,
             response_mime_type="application/json",
-            response_schema=clean_schema,
+            response_schema=GeneratedQuestionBatch,
         )
 
     def _generate_once(self, prompt: BuiltPrompt) -> str:

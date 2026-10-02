@@ -19,13 +19,15 @@ export default function QuestionBank() {
   const [units, setUnits] = useState([]);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
-  const [activeTab, setActiveTab] = useState('pool'); // 'pool' or 'generations'
+  const [activeTab, setActiveTab] = useState(
+    () => localStorage.getItem('qb_active_tab') || 'pool'
+  );
 
-  // Filters
-  const [filters, setFilters] = useState({
-    subject_id: '',
-    limit: 20
-  });
+  // Filters — persisted in localStorage so a page reload keeps the last subject selected
+  const [filters, setFilters] = useState(() => ({
+    subject_id: localStorage.getItem('qb_subject_id') || '',
+    limit: Number(localStorage.getItem('qb_limit')) || 20,
+  }));
 
   // Expanded generation (to view drafts)
   const [expandedGen, setExpandedGen] = useState(null);
@@ -37,6 +39,7 @@ export default function QuestionBank() {
     subject_id: '',
     unit_id: '',
     number_of_questions: 5,
+    marks_per_question: 2,
     difficulty: 'MEDIUM',
     question_type: 'MCQ',
     bloom_level: 'APPLY',
@@ -103,10 +106,19 @@ export default function QuestionBank() {
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
     setFilters(prev => ({ ...prev, [name]: value }));
+    // Persist so page reload remembers the last selection
+    localStorage.setItem(`qb_${name}`, value);
   };
 
   const clearFilters = () => {
     setFilters({ subject_id: '', limit: 20 });
+    localStorage.removeItem('qb_subject_id');
+    localStorage.removeItem('qb_limit');
+  };
+
+  const switchTab = (tab) => {
+    setActiveTab(tab);
+    localStorage.setItem('qb_active_tab', tab);
   };
 
   const handleExpandGeneration = async (genId) => {
@@ -135,6 +147,7 @@ export default function QuestionBank() {
       difficulty: genParams.difficulty,
       bloom_level: genParams.bloom_level,
       number_of_questions: parseInt(genParams.number_of_questions, 10),
+      marks_per_question: parseFloat(genParams.marks_per_question),
       topic: genParams.topic,
       target_audience: genParams.target_audience,
     };
@@ -146,8 +159,10 @@ export default function QuestionBank() {
       const generation = await aiService.generateQuestions(payload);
       setShowGenModal(false);
       toast.success(`${generation.questions?.length || 0} question drafts generated. Review them below.`);
-      setActiveTab('generations');
-      setFilters(prev => ({ ...prev, subject_id: genParams.subject_id }));
+      switchTab('generations');
+      const newSubjectId = genParams.subject_id;
+      setFilters(prev => ({ ...prev, subject_id: newSubjectId }));
+      localStorage.setItem('qb_subject_id', newSubjectId);
       setExpandedGen(generation);
       await fetchGenerations();
     } catch (err) {
@@ -194,13 +209,13 @@ export default function QuestionBank() {
       {/* Tabs */}
       <div className="flex border-b border-outline-variant">
         <button
-          onClick={() => setActiveTab('pool')}
+          onClick={() => switchTab('pool')}
           className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${activeTab === 'pool' ? 'border-primary text-primary' : 'border-transparent text-secondary hover:text-on-surface hover:border-outline-variant'}`}
         >
           Permanent Pool
         </button>
         <button
-          onClick={() => setActiveTab('generations')}
+          onClick={() => switchTab('generations')}
           className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${activeTab === 'generations' ? 'border-primary text-primary' : 'border-transparent text-secondary hover:text-on-surface hover:border-outline-variant'}`}
         >
           Generation History
@@ -404,12 +419,26 @@ export default function QuestionBank() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1">
-                  <label className="text-sm font-semibold">Count</label>
-                  <select required value={genParams.number_of_questions} onChange={e => setGenParams({...genParams, number_of_questions: e.target.value})} className="h-[40px] bg-surface-container border border-outline-variant rounded-lg px-3 outline-none">
-                    <option value="5">5</option>
-                    <option value="6">6</option>
-                  </select>
+                  <label className="text-sm font-semibold">Questions (1–20)</label>
+                  <input
+                    type="number" min={1} max={20} required
+                    value={genParams.number_of_questions}
+                    onChange={e => setGenParams({...genParams, number_of_questions: e.target.value})}
+                    className="h-[40px] bg-surface-container border border-outline-variant rounded-lg px-3 outline-none"
+                  />
                 </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-sm font-semibold">Marks / Question</label>
+                  <input
+                    type="number" min={0.5} max={100} step={0.5} required
+                    value={genParams.marks_per_question}
+                    onChange={e => setGenParams({...genParams, marks_per_question: e.target.value})}
+                    className="h-[40px] bg-surface-container border border-outline-variant rounded-lg px-3 outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1">
                   <label className="text-sm font-semibold">Type</label>
                   <select value={genParams.question_type} onChange={e => setGenParams({...genParams, question_type: e.target.value})} className="h-[40px] bg-surface-container border border-outline-variant rounded-lg px-3 outline-none">

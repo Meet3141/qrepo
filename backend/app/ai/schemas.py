@@ -71,14 +71,15 @@ class RejectionReason(str, Enum):
     OTHER = "OTHER"
 
 
-# v1 product scope: small batches keep latency, token cost and review effort manageable
-V1_ALLOWED_QUESTION_COUNTS = (5, 6)
+# Flexible batch size: 1–20. Larger batches cost more tokens and take longer to validate.
 DEFAULT_QUESTIONS = 5
-# Structural cap for the model's output schema (the validation engine enforces the exact count)
-MAX_QUESTIONS_PER_BATCH = 10
+MIN_QUESTIONS_PER_BATCH = 1
+MAX_QUESTIONS_PER_BATCH = 20
 
 MCQ_OPTION_COUNT = 4
 TRUE_FALSE_OPTIONS = ["True", "False"]
+
+DEFAULT_MARKS_PER_QUESTION = 1.0
 
 
 def _reject_control_chars(value: str) -> str:
@@ -109,9 +110,12 @@ class QuestionGenerationRequest(BaseModel):
     topic: str = Field(..., min_length=2, max_length=200)
     target_audience: str = Field(..., min_length=2, max_length=100)
     question_type: QuestionType
-    number_of_questions: int = DEFAULT_QUESTIONS
+    number_of_questions: int = Field(DEFAULT_QUESTIONS, ge=MIN_QUESTIONS_PER_BATCH, le=MAX_QUESTIONS_PER_BATCH)
     difficulty: Difficulty
     bloom_level: BloomLevel
+    # Uniform marks applied to every question in this batch.
+    # Faculty can override per-question in the review step.
+    marks_per_question: float = Field(DEFAULT_MARKS_PER_QUESTION, ge=0.5, le=100.0)
 
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
@@ -119,14 +123,6 @@ class QuestionGenerationRequest(BaseModel):
     @classmethod
     def _single_line_text(cls, value: str) -> str:
         return _single_line(value)
-
-    @field_validator("number_of_questions")
-    @classmethod
-    def _v1_count(cls, value: int) -> int:
-        if value not in V1_ALLOWED_QUESTION_COUNTS:
-            allowed = " or ".join(str(n) for n in V1_ALLOWED_QUESTION_COUNTS)
-            raise ValueError(f"number_of_questions must be {allowed}")
-        return value
 
 
 # --------------------------
@@ -140,25 +136,20 @@ class GeneratedQuestion(BaseModel):
     parameter compliance) are enforced by QuestionValidationEngine so they can be reported
     back to the model in a repair prompt.
     """
-    question_text: str = Field(..., max_length=4000)
+    question_text: str
     question_type: QuestionType
-    topic: str = Field(..., max_length=300)
+    topic: str
     difficulty: Difficulty
     bloom_level: BloomLevel
-    # Inclusive bounds only: Gemini's response schema does not support exclusiveMinimum
-    marks: float = Field(..., ge=0, le=100)
+    marks: float
     options: Optional[List[str]] = None
     correct_option_index: Optional[int] = None
-    expected_answer: Optional[str] = Field(None, max_length=8000)
-    explanation: Optional[str] = Field(None, max_length=4000)
-
-    model_config = ConfigDict(extra="forbid")
-
+    expected_answer: Optional[str] = None
+    explanation: Optional[str] = None
 
 class GeneratedQuestionBatch(BaseModel):
-    questions: List[GeneratedQuestion] = Field(..., min_length=1, max_length=MAX_QUESTIONS_PER_BATCH)
+    questions: List[GeneratedQuestion]
 
-    model_config = ConfigDict(extra="forbid")
 
 
 # --------------------------

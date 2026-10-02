@@ -1,6 +1,6 @@
 import uuid
 from typing import Optional, List
-from sqlalchemy import String, ForeignKey, Uuid, Integer
+from sqlalchemy import String, ForeignKey, Uuid, Integer, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base, TimestampMixin
 
@@ -32,6 +32,23 @@ class Unit(Base, TimestampMixin):
 
     subject: Mapped["Subject"] = relationship(back_populates="units")
     documents: Mapped[List["app.document.models.Document"]] = relationship("app.document.models.Document", back_populates="unit", cascade="all, delete-orphan")
+    topics: Mapped[List["UnitTopic"]] = relationship(back_populates="unit", cascade="all, delete-orphan", order_by="UnitTopic.order_index")
     
     def __repr__(self) -> str:
         return f"<Unit(id={self.id}, unit_number={self.unit_number}, title='{self.title}')>"
+
+
+class UnitTopic(Base, TimestampMixin):
+    """An ordered sub-topic within a Unit (e.g. 'Binary Search Trees', 'AVL Rotations')."""
+    __tablename__ = "unit_topics"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    unit_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("units.id", ondelete="CASCADE"), index=True, nullable=False)
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    order_index: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+    unit: Mapped["Unit"] = relationship(back_populates="topics")
+
+    def __repr__(self) -> str:
+        return f"<UnitTopic(id={self.id}, title='{self.title}')>"

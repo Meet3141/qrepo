@@ -11,7 +11,6 @@ from app.ai.schemas import QuestionGenerationRequest, QuestionType, MCQ_OPTION_C
 from app.ai.context import AcademicContext
 from app.ai.validation import (
     ValidationIssue,
-    MARKS_BOUNDS,
     EXPECTED_ANSWER_BOUNDS,
     QUESTION_TEXT_MIN_CHARS,
     QUESTION_TEXT_MAX_CHARS,
@@ -65,7 +64,7 @@ _TYPE_RULES = {
 
 
 def _constraints(request: QuestionGenerationRequest) -> str:
-    lo, hi = MARKS_BOUNDS[request.question_type]
+    marks = request.marks_per_question
     return (
         "Constraints (apply to every question):\n"
         f"- question_type: {request.question_type.value}\n"
@@ -73,7 +72,7 @@ def _constraints(request: QuestionGenerationRequest) -> str:
         f"- bloom_level: {request.bloom_level.value}\n"
         "- topic: copy the topic text above verbatim\n"
         f"- question_text: {QUESTION_TEXT_MIN_CHARS}-{QUESTION_TEXT_MAX_CHARS} characters\n"
-        f"- marks: a number between {lo:g} and {hi:g}, proportional to the effort the question requires\n"
+        f"- marks: exactly {marks:g} (set by the faculty; do not change this value)\n"
         f"- explanation: optional for written answers, at most {EXPLANATION_MAX_CHARS} characters\n"
         f"- {_TYPE_RULES[request.question_type]}"
     )

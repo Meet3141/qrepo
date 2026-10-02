@@ -25,8 +25,38 @@ class UnitResponse(UnitBase):
     subject_id: uuid.UUID
     created_at: datetime
     updated_at: datetime
+    topics: List["UnitTopicResponse"] = []
 
     model_config = ConfigDict(from_attributes=True)
+
+
+# --------------------------
+# Unit Topic Schemas
+# --------------------------
+
+class UnitTopicBase(BaseModel):
+    title: str = Field(..., max_length=255)
+    description: Optional[str] = Field(None, max_length=500)
+    order_index: int = Field(0, ge=0)
+
+class UnitTopicCreate(UnitTopicBase):
+    pass
+
+class UnitTopicUpdate(BaseModel):
+    title: Optional[str] = Field(None, max_length=255)
+    description: Optional[str] = Field(None, max_length=500)
+    order_index: Optional[int] = Field(None, ge=0)
+
+class UnitTopicResponse(UnitTopicBase):
+    id: uuid.UUID
+    unit_id: uuid.UUID
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+UnitResponse.model_rebuild()
 
 
 # --------------------------
