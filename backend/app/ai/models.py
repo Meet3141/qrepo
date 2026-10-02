@@ -7,6 +7,9 @@ AI generation persistence.
   questions; only VALIDATED/EDITED drafts may be promoted later.
 - DraftFeedback: append-only faculty review events (accept/edit/reject, reason, rating),
   kept as a future supervised / reward-signal dataset. Nothing trains on it in v1.
+- PooledQuestion: permanent question pool per subject. Auto-created when a draft is
+  ACCEPTED or EDITED by faculty. Deletable by faculty/admin; edit-safe (a pool edit never
+  touches the original draft or the immutable ai_original snapshot).
 """
 import uuid
 from datetime import datetime
@@ -117,3 +120,40 @@ class DraftFeedback(Base, TimestampMixin):
 
     def __repr__(self) -> str:
         return f"<DraftFeedback(id={self.id}, action='{self.action}')>"
+
+
+class PooledQuestion(Base, TimestampMixin):
+    """
+    Permanent, subject-scoped question pool.
+
+    Created automatically when a QuestionDraft is ACCEPTED (VALIDATE) or ACCEPTED-WITH-EDITS
+    (EDIT) during faculty review. The content stored here is the faculty-approved version
+    (i.e. the draft's current fields at promotion time, which may differ from ai_original).
+
+    A PooledQuestion can be edited or deleted by faculty/admin without touching the source draft.
+    The source_draft_id link enables audit trails and deduplication.
+    """
+    __tablename__ = "pooled_questions"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    subject_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("subjects.id", ondelete="CASCADE"), index=True, nullable=False)
+    unit_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("units.id", ondelete="SET NULL"), index=True, nullable=True)
+    source_draft_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        ForeignKey("question_drafts.id", ondelete="SET NULL"), index=True, nullable=True)
+    added_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True, nullable=False)
+
+    question_text: Mapped[str] = mapped_column(Text, nullable=False)
+    question_type: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
+    topic: Mapped[str] = mapped_column(String(300), nullable=False)
+    difficulty: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
+    bloom_level: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
+    marks: Mapped[float] = mapped_column(Float, nullable=False)
+    options: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
+    correct_option_index: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    expected_answer: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    explanation: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    quality_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+
+    def __repr__(self) -> str:
+        return f"<PooledQuestion(id={self.id}, subject_id={self.subject_id})>"

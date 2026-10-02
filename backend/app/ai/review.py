@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 from typing import Optional, Sequence
 from pydantic import ValidationError
 
-from app.ai.models import AIGeneration, DraftFeedback, QuestionDraft
+from app.ai.models import AIGeneration, DraftFeedback, QuestionDraft, PooledQuestion
 from app.ai.repository import AIGenerationRepository
 from app.ai.schemas import DraftReviewRequest, FacultyReviewStatus, GeneratedQuestion, ReviewAction
 from app.ai.services import authorize_subject_access, question_snapshot, visible_subject_ids
@@ -98,4 +98,25 @@ class DraftReviewService:
             after_snapshot=after,
             changed_fields=changed,
         )
-        return self.repository.save_review(draft, feedback)
+        
+        pooled_question = None
+        if draft.faculty_review_status in [FacultyReviewStatus.VALIDATED.value, FacultyReviewStatus.EDITED.value]:
+            pooled_question = PooledQuestion(
+                subject_id=draft.subject_id,
+                unit_id=draft.unit_id,
+                source_draft_id=draft.id,
+                added_by=current_user.id,
+                question_text=draft.question_text,
+                question_type=draft.question_type,
+                topic=draft.topic,
+                difficulty=draft.difficulty,
+                bloom_level=draft.bloom_level,
+                marks=draft.marks,
+                options=draft.options,
+                correct_option_index=draft.correct_option_index,
+                expected_answer=draft.expected_answer,
+                explanation=draft.explanation,
+                quality_score=draft.quality_score,
+            )
+
+        return self.repository.save_review(draft, feedback, pooled_question)

@@ -24,6 +24,10 @@ export const aiService = {
    */
   reviewDraft: (draftId, review) => unwrap(apiClient.post(`/ai/drafts/${draftId}/review`, review)),
 
+  /** GET /ai/pool?subject_id&limit */
+  listPool: ({ subject_id, limit } = {}) =>
+    unwrap(apiClient.get('/ai/pool', { params: { subject_id, ...(limit ? { limit } : {}) } })),
+
   /** GET /ai/health (Admin only). */
   healthCheck: () => unwrap(apiClient.get('/ai/health')),
 };

@@ -184,6 +184,29 @@ class QuestionDraftResponse(BaseModel):
     faculty_review_status: FacultyReviewStatus
     reviewed_at: Optional[datetime] = None
     created_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+
+class PooledQuestionResponse(BaseModel):
+    id: uuid.UUID
+    subject_id: uuid.UUID
+    unit_id: Optional[uuid.UUID] = None
+    source_draft_id: Optional[uuid.UUID] = None
+    added_by: uuid.UUID
+    
+    question_text: str
+    question_type: QuestionType
+    topic: str
+    difficulty: Difficulty
+    bloom_level: BloomLevel
+    marks: float
+    options: Optional[List[str]] = None
+    correct_option_index: Optional[int] = None
+    expected_answer: Optional[str] = None
+    explanation: Optional[str] = None
+    quality_score: Optional[float] = None
+    
+    created_at: datetime
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)

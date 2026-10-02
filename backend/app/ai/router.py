@@ -16,6 +16,7 @@ from app.ai.schemas import (
     QuestionDraftResponse,
     QuestionGenerationRequest,
     QuestionGenerationResponse,
+    PooledQuestionResponse,
 )
 from app.ai.services import QuestionGenerationService
 from app.permissions.catalog import AI_GENERATE_QUESTIONS
@@ -134,3 +135,20 @@ def ai_health(
     data = AIHealthResponse(available=health.available, latency_ms=health.latency_ms,
                             error_category=health.error_category)
     return APIResponse(success=True, message="AI provider health", data=data)
+
+
+@ai_router.get(
+    "/pool",
+    response_model=APIResponse[List[PooledQuestionResponse]],
+    summary="Get the permanent question pool for a subject"
+)
+def list_pooled_questions(
+    subject_id: uuid.UUID = Query(...),
+    limit: int = Query(50, ge=1, le=500),
+    current_user: User = Depends(RequireRole(AI_ROLES)),
+    service: DraftReviewService = Depends(get_draft_review_service),
+):
+    service._authorize_subject(subject_id, current_user)
+    questions = service.repository.list_pooled_questions(subject_id, limit)
+    data = [PooledQuestionResponse.model_validate(q) for q in questions]
+    return APIResponse(success=True, message="Question pool retrieved", data=data)

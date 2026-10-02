@@ -2,7 +2,7 @@ import uuid
 from typing import List, Optional, Sequence
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
-from app.ai.models import AIGeneration, QuestionDraft, DraftFeedback
+from app.ai.models import AIGeneration, QuestionDraft, DraftFeedback, PooledQuestion
 
 
 class AIGenerationRepository:
@@ -52,10 +52,12 @@ class AIGenerationRepository:
         stmt = select(QuestionDraft).where(QuestionDraft.id == draft_id)
         return self.db.execute(stmt).scalar_one_or_none()
 
-    def save_review(self, draft: QuestionDraft, feedback: DraftFeedback) -> QuestionDraft:
-        """Update the draft and append its feedback event in one transaction."""
+    def save_review(self, draft: QuestionDraft, feedback: DraftFeedback, pooled_question: Optional[PooledQuestion] = None) -> QuestionDraft:
+        """Update the draft, append its feedback event, and optionally add to the pool in one transaction."""
         try:
             self.db.add(feedback)
+            if pooled_question:
+                self.db.add(pooled_question)
             self.db.commit()
         except Exception:
             self.db.rollback()
@@ -65,4 +67,8 @@ class AIGenerationRepository:
 
     def get_feedback(self, draft_id: uuid.UUID) -> Sequence[DraftFeedback]:
         stmt = select(DraftFeedback).where(DraftFeedback.draft_id == draft_id).order_by(DraftFeedback.created_at)
+        return self.db.execute(stmt).scalars().all()
+
+    def list_pooled_questions(self, subject_id: uuid.UUID, limit: int = 50) -> Sequence[PooledQuestion]:
+        stmt = select(PooledQuestion).where(PooledQuestion.subject_id == subject_id).order_by(PooledQuestion.created_at.desc()).limit(limit)
         return self.db.execute(stmt).scalars().all()

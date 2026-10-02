@@ -250,14 +250,13 @@ export default function DocumentManagement() {
                 <th className="p-md">Document Name</th>
                 <th className="p-md">Type</th>
                 <th className="p-md">Size</th>
-                <th className="p-md">Status</th>
                 <th className="p-md hidden lg:table-cell">Date Uploaded</th>
                 <th className="p-md text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="text-sm text-on-surface divide-y divide-outline-variant">
               {loading ? (
-                <tr><td colSpan={6} className="p-4 text-center text-secondary">Loading documents...</td></tr>
+                <tr><td colSpan={5} className="p-4 text-center text-secondary">Loading documents...</td></tr>
               ) : documents.length > 0 ? (
                 documents.map((doc) => (
                   <tr key={doc.id} className="hover:bg-surface-container-low transition-colors group">
@@ -271,11 +270,6 @@ export default function DocumentManagement() {
                     </td>
                     <td className="p-md"><span className="bg-surface-variant text-on-surface-variant px-2 py-1 rounded-full text-[11px] font-medium uppercase">{doc.file_name.split('.').pop()}</span></td>
                     <td className="p-md text-secondary">{formatBytes(doc.file_size)}</td>
-                    <td className="p-md">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${STATUS_STYLES[doc.processing_status] || 'bg-surface-variant text-on-surface-variant'}`}>
-                        {doc.processing_status}
-                      </span>
-                    </td>
                     <td className="p-md hidden lg:table-cell text-secondary">{new Date(doc.created_at).toLocaleDateString()}</td>
                     <td className="p-md text-right">
                         <div className="flex justify-end gap-sm md:opacity-0 md:group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
@@ -286,15 +280,6 @@ export default function DocumentManagement() {
                               {downloadingDoc === doc.id ? 'sync' : 'download'}
                             </span>
                           </button>
-                          {(doc.processing_status === 'PENDING' || doc.processing_status === 'FAILED') && (
-                            <button onClick={() => handleProcess(doc)} disabled={busyDoc === doc.id}
-                                    className="text-secondary hover:text-primary p-1 rounded hover:bg-primary-container/30 disabled:opacity-50"
-                                    title="Extract text" aria-label={`Extract text from ${doc.file_name}`}>
-                              <span className={`material-symbols-outlined text-[20px] ${busyDoc === doc.id ? 'animate-spin' : ''}`}>
-                                {busyDoc === doc.id ? 'sync' : 'transform'}
-                              </span>
-                            </button>
-                          )}
                           {canDelete && (
                             <button onClick={() => setDeleteTarget(doc)} className="text-secondary hover:text-error p-1 rounded hover:bg-error-container/30"
                                     title="Delete" aria-label={`Delete ${doc.file_name}`}>
@@ -307,7 +292,7 @@ export default function DocumentManagement() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={6} className="p-4 text-center text-secondary">
+                  <td colSpan={5} className="p-4 text-center text-secondary">
                     {selectedUnit ? 'No documents in this unit yet.' : 'Select a subject and unit to see its documents.'}
                   </td>
                 </tr>
