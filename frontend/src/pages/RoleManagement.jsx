@@ -36,26 +36,34 @@ export default function RoleManagement() {
   return (
     <div className="flex-1 overflow-y-auto p-margin-mobile md:p-gutter flex flex-col h-full max-w-container-max mx-auto w-full">
       {/* Canvas Header */}
-      <div className="mb-6 flex flex-col md:flex-row md:justify-between md:items-end gap-4 shrink-0">
+      <div className="mb-8 flex flex-col md:flex-row md:justify-between md:items-end gap-6 shrink-0">
         <div>
-          <h2 className="text-3xl font-bold text-on-background mb-2">Organization Structure</h2>
-          <p className="text-base text-on-surface-variant max-w-2xl">Manage academic departments, assign Head of Departments, and configure granular role permissions across the QRepo platform.</p>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shadow-sm border border-primary/20">
+              <span className="material-symbols-outlined text-[20px]">corporate_fare</span>
+            </div>
+            <h2 className="text-3xl font-bold text-on-background tracking-tight">Organization Structure</h2>
+          </div>
+          <p className="text-base text-on-surface-variant max-w-2xl mt-3 leading-relaxed">
+            Manage academic departments, assign Head of Departments, and configure granular role permissions across the QRepo platform.
+          </p>
         </div>
-        <div className="flex gap-2">
-          <button onClick={() => alert('Export Data (demo — no export API)')} className="bg-surface-container-lowest border border-outline-variant text-secondary text-sm font-medium px-4 py-2 rounded hover:bg-surface-container-low transition-colors shadow-sm">
+        <div className="flex items-center gap-3">
+          <button onClick={() => alert('Export Data (demo — no export API)')} className="bg-surface-container-lowest border border-outline-variant text-on-surface text-sm font-medium px-5 py-2.5 rounded-lg hover:bg-surface-container-low transition-colors shadow-sm flex items-center gap-2">
+            <span className="material-symbols-outlined text-[18px]">download</span>
             Export Data
           </button>
-          <button onClick={() => alert('New Entity (demo — no entity creation API)')} className="bg-primary text-on-primary text-sm font-medium px-4 py-2 rounded hover:bg-primary-container transition-colors shadow-sm flex items-center gap-2">
-            <span className="material-symbols-outlined text-[18px]">add</span>
+          <button onClick={() => alert('New Entity (demo — no entity creation API)')} className="bg-primary text-on-primary text-sm font-semibold px-5 py-2.5 rounded-lg hover:brightness-110 active:brightness-95 transition-all shadow-md flex items-center gap-2">
+            <span className="material-symbols-outlined text-[18px] font-bold">add</span>
             New Entity
           </button>
         </div>
       </div>
 
-      {/* Bento / Split Layout Container */}
-      <div className="flex-1 flex flex-col xl:flex-row gap-6 min-h-[600px]">
-        {/* Left Panel: Department Management */}
-        <div className="flex-1 bg-surface-container-lowest rounded-xl border border-outline-variant flex flex-col shadow-sm overflow-hidden h-full">
+      {/* Layout Container */}
+      <div className="flex flex-col gap-6 pb-8">
+        {/* Top Panel: Department Management */}
+        <div className="bg-surface-container-lowest rounded-xl border border-outline-variant flex flex-col shadow-sm overflow-hidden">
           <div className="p-4 border-b border-outline-variant bg-surface-bright flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 shrink-0">
             <div className="flex items-center gap-2">
               <span className="material-symbols-outlined text-primary bg-primary-fixed-dim/30 p-1.5 rounded-lg">domain</span>
@@ -71,11 +79,11 @@ export default function RoleManagement() {
             </div>
           </div>
           
-          <div className="flex-1 overflow-y-auto">
-            <table className="w-full text-left">
+          <div className="flex-1 overflow-x-auto">
+            <table className="w-full text-left whitespace-nowrap min-w-[500px]">
               <thead className="bg-surface-bright sticky top-0 z-10 border-b border-outline-variant">
                 <tr>
-                  <th className="p-3 text-xs font-semibold text-secondary uppercase tracking-wider w-1/3">Department Name</th>
+                  <th className="p-3 text-xs font-semibold text-secondary uppercase tracking-wider">Department Name</th>
                   <th className="p-3 text-xs font-semibold text-secondary uppercase tracking-wider">Head of Dept (HOD)</th>
                   <th className="p-3 text-xs font-semibold text-secondary uppercase tracking-wider text-right">Faculty Count</th>
                   <th className="p-3 text-xs font-semibold text-secondary uppercase tracking-wider text-right">Programs</th>
@@ -84,65 +92,65 @@ export default function RoleManagement() {
               </thead>
               <tbody className="text-sm text-on-surface">
                 <tr className="hover:bg-surface-container-low transition-colors group cursor-pointer border-b border-outline-variant/50">
-                  <td className="p-3 font-medium">Computer Science & Engineering</td>
-                  <td className="p-3">
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full bg-primary-fixed-dim flex items-center justify-center text-xs font-bold text-primary">DR</div>
+                  <td className="p-4 font-medium">Computer Science & Engineering</td>
+                  <td className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-7 h-7 rounded-full bg-primary-container text-on-primary-container shrink-0 flex items-center justify-center text-xs font-bold">DR</div>
                       <span>Dr. Alan Turing</span>
                     </div>
                   </td>
-                  <td className="p-3 text-right">42</td>
-                  <td className="p-3 text-right">
+                  <td className="p-4 text-right">42</td>
+                  <td className="p-4 text-right">
                     <span className="bg-secondary-container text-on-secondary-container px-2 py-1 rounded-md text-xs font-semibold">4</span>
                   </td>
-                  <td className="p-3 text-right opacity-0 group-hover:opacity-100 transition-opacity">
+                  <td className="p-4 text-right opacity-0 group-hover:opacity-100 transition-opacity">
                     <span className="material-symbols-outlined text-outline hover:text-primary cursor-pointer">more_vert</span>
                   </td>
                 </tr>
-                <tr className="bg-surface-container-lowest hover:bg-surface-container-low transition-colors group cursor-pointer border-b border-outline-variant/50">
-                  <td className="p-3 font-medium">Information Technology</td>
-                  <td className="p-3">
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full bg-tertiary-fixed-dim flex items-center justify-center text-xs font-bold text-tertiary">SP</div>
+                <tr className="bg-surface-container-low/30 hover:bg-surface-container-low transition-colors group cursor-pointer border-b border-outline-variant/50">
+                  <td className="p-4 font-medium">Information Technology</td>
+                  <td className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-7 h-7 rounded-full bg-tertiary-container text-on-tertiary-container shrink-0 flex items-center justify-center text-xs font-bold">SP</div>
                       <span>Prof. Sarah Parker</span>
                     </div>
                   </td>
-                  <td className="p-3 text-right">28</td>
-                  <td className="p-3 text-right">
+                  <td className="p-4 text-right">28</td>
+                  <td className="p-4 text-right">
                     <span className="bg-secondary-container text-on-secondary-container px-2 py-1 rounded-md text-xs font-semibold">2</span>
                   </td>
-                  <td className="p-3 text-right opacity-0 group-hover:opacity-100 transition-opacity">
+                  <td className="p-4 text-right opacity-0 group-hover:opacity-100 transition-opacity">
                     <span className="material-symbols-outlined text-outline hover:text-primary cursor-pointer">more_vert</span>
                   </td>
                 </tr>
                 <tr className="hover:bg-surface-container-low transition-colors group cursor-pointer border-b border-outline-variant/50">
-                  <td className="p-3 font-medium">Electrical Engineering</td>
-                  <td className="p-3">
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full bg-surface-dim flex items-center justify-center text-xs font-bold text-on-surface-variant">NT</div>
+                  <td className="p-4 font-medium">Electrical Engineering</td>
+                  <td className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-7 h-7 rounded-full bg-surface-variant text-on-surface-variant shrink-0 flex items-center justify-center text-xs font-bold">NT</div>
                       <span>Dr. Nikola Tesla</span>
                     </div>
                   </td>
-                  <td className="p-3 text-right">35</td>
-                  <td className="p-3 text-right">
+                  <td className="p-4 text-right">35</td>
+                  <td className="p-4 text-right">
                     <span className="bg-secondary-container text-on-secondary-container px-2 py-1 rounded-md text-xs font-semibold">3</span>
                   </td>
-                  <td className="p-3 text-right opacity-0 group-hover:opacity-100 transition-opacity">
+                  <td className="p-4 text-right opacity-0 group-hover:opacity-100 transition-opacity">
                     <span className="material-symbols-outlined text-outline hover:text-primary cursor-pointer">more_vert</span>
                   </td>
                 </tr>
-                <tr className="bg-surface-container-lowest hover:bg-surface-container-low transition-colors group cursor-pointer border-b border-outline-variant/50">
-                  <td className="p-3 font-medium">Mechanical Engineering</td>
-                  <td className="p-3">
-                    <div className="flex items-center gap-2">
+                <tr className="bg-surface-container-low/30 hover:bg-surface-container-low transition-colors group cursor-pointer border-b border-outline-variant/50">
+                  <td className="p-4 font-medium">Mechanical Engineering</td>
+                  <td className="p-4">
+                    <div className="flex items-center gap-3">
                       <span className="text-outline italic text-sm">Unassigned</span>
                     </div>
                   </td>
-                  <td className="p-3 text-right">30</td>
-                  <td className="p-3 text-right">
+                  <td className="p-4 text-right">30</td>
+                  <td className="p-4 text-right">
                     <span className="bg-secondary-container text-on-secondary-container px-2 py-1 rounded-md text-xs font-semibold">2</span>
                   </td>
-                  <td className="p-3 text-right opacity-0 group-hover:opacity-100 transition-opacity">
+                  <td className="p-4 text-right opacity-0 group-hover:opacity-100 transition-opacity">
                     <span className="material-symbols-outlined text-outline hover:text-primary cursor-pointer">more_vert</span>
                   </td>
                 </tr>
@@ -151,8 +159,8 @@ export default function RoleManagement() {
           </div>
         </div>
 
-        {/* Right Panel: Role Management Matrix */}
-        <div className="flex-1 bg-surface-container-lowest rounded-xl border border-outline-variant flex flex-col shadow-sm overflow-hidden h-full">
+        {/* Bottom Panel: Role Management Matrix */}
+        <div className="bg-surface-container-lowest rounded-xl border border-outline-variant flex flex-col shadow-sm overflow-hidden">
           <div className="p-4 border-b border-outline-variant bg-surface-bright flex justify-between items-center shrink-0">
             <div className="flex items-center gap-2">
               <span className="material-symbols-outlined text-primary bg-primary-fixed-dim/30 p-1.5 rounded-lg">verified_user</span>
@@ -168,7 +176,7 @@ export default function RoleManagement() {
           </div>
           
           <div className="flex-1 overflow-auto bg-surface-container-lowest">
-            <table className="w-full text-left min-w-[600px]">
+            <table className="w-full text-left">
               <thead className="bg-surface-bright sticky top-0 z-10 border-b border-outline-variant">
                 <tr>
                   <th className="p-3 text-xs font-semibold text-secondary uppercase tracking-wider w-[40%] bg-surface-bright sticky left-0 z-20 border-r border-outline-variant">Permission Node</th>
@@ -181,7 +189,7 @@ export default function RoleManagement() {
               <tbody className="text-sm text-on-surface">
                 {/* Group 1 */}
                 <tr className="bg-surface-container-low/50">
-                  <td className="p-2 px-3 text-xs text-secondary font-bold uppercase tracking-wider sticky left-0 border-r border-outline-variant" colSpan="5">Document Handling</td>
+                  <td className="p-2 px-3 text-xs text-secondary font-bold uppercase tracking-wider" colSpan="5">Document Handling</td>
                 </tr>
                 <tr className="border-b border-outline-variant/50">
                   <td className="p-3 font-medium sticky left-0 bg-surface-container-lowest border-r border-outline-variant">Upload Question Papers</td>
@@ -200,7 +208,7 @@ export default function RoleManagement() {
                 
                 {/* Group 2 */}
                 <tr className="bg-surface-container-low/50">
-                  <td className="p-2 px-3 text-xs text-secondary font-bold uppercase tracking-wider sticky left-0 border-r border-outline-variant" colSpan="5">Assessment Workflow</td>
+                  <td className="p-2 px-3 text-xs text-secondary font-bold uppercase tracking-wider" colSpan="5">Assessment Workflow</td>
                 </tr>
                 <tr className="border-b border-outline-variant/50">
                   <td className="p-3 font-medium sticky left-0 bg-surface-container-lowest border-r border-outline-variant">Initiate Paper Review</td>
@@ -226,9 +234,11 @@ export default function RoleManagement() {
 
                 {/* Group 3 AI */}
                 <tr className="bg-surface-container-low/50">
-                  <td className="p-2 px-3 text-xs text-secondary font-bold uppercase tracking-wider sticky left-0 border-r border-outline-variant flex items-center gap-1" colSpan="5">
-                    <span className="material-symbols-outlined text-[14px] text-tertiary">psychology</span>
-                    AI Capabilities
+                  <td className="p-2 px-3 text-xs text-secondary font-bold uppercase tracking-wider" colSpan="5">
+                    <div className="flex items-center gap-1">
+                      <span className="material-symbols-outlined text-[14px] text-tertiary">psychology</span>
+                      AI Capabilities
+                    </div>
                   </td>
                 </tr>
                 <tr className="border-b border-outline-variant/50">

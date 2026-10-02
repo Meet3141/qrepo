@@ -33,11 +33,13 @@ export default function UserManagement() {
   return (
     <div className="w-full flex flex-col gap-6">
       {/* API Unavailable Banner */}
-      <div className="bg-secondary-container text-on-secondary-container rounded-xl p-4 flex items-start gap-3">
-        <span className="material-symbols-outlined text-[20px] mt-0.5 shrink-0">info</span>
-        <div>
-          <p className="text-sm font-medium">Demo Mode — Admin user management API endpoints are not yet available.</p>
-          <p className="text-xs mt-1 opacity-80">User creation is available through the public registration endpoint. The data below is for demonstration purposes only.</p>
+      <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 flex items-start gap-4 shadow-sm">
+        <div className="w-8 h-8 rounded-full bg-secondary/10 flex items-center justify-center shrink-0">
+          <span className="material-symbols-outlined text-[18px] text-secondary">info</span>
+        </div>
+        <div className="pt-0.5">
+          <p className="text-[14px] font-semibold text-on-surface">Demo Mode — Admin user management APIs are not yet available.</p>
+          <p className="text-[13px] mt-1 text-on-surface-variant">User creation is available through the public registration endpoint. The data below is for demonstration purposes only.</p>
         </div>
       </div>
 

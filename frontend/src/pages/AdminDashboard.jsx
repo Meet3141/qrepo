@@ -24,16 +24,16 @@ export default function AdminDashboard() {
   return (
     <div className="w-full flex flex-col gap-6">
       {/* KPIs Bento Grid */}
-      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
         {/* KPI 1: Total Users */}
-        <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 flex flex-col gap-2 hover:shadow-sm transition-shadow">
-          <div className="flex justify-between items-start">
-            <span className="text-[11px] text-secondary uppercase tracking-wider font-semibold">Total Users</span>
-            <div className="w-8 h-8 rounded-full bg-primary-fixed flex items-center justify-center text-primary shrink-0">
+        <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 flex flex-col gap-2 hover:shadow-sm transition-shadow min-w-0">
+          <div className="flex justify-between items-start gap-2">
+            <span className="text-[11px] text-on-surface-variant uppercase tracking-wider font-semibold truncate">Total Users</span>
+            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
               <span className="material-symbols-outlined text-[16px]">group</span>
             </div>
           </div>
-          <div className="text-2xl font-semibold text-on-surface mt-1">—</div>
+          <div className="text-2xl font-semibold text-on-surface mt-1">1,248</div>
           <div className="flex items-center gap-1 text-primary text-[11px] font-medium">
             <span className="material-symbols-outlined text-[14px]">trending_up</span>
             <span>+4% this week</span>
@@ -41,56 +41,56 @@ export default function AdminDashboard() {
         </div>
 
         {/* KPI 2: Departments */}
-        <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 flex flex-col gap-2 hover:shadow-sm transition-shadow">
-          <div className="flex justify-between items-start">
-            <span className="text-[11px] text-secondary uppercase tracking-wider font-semibold">Departments</span>
-            <div className="w-8 h-8 rounded-full bg-secondary-fixed flex items-center justify-center text-secondary shrink-0">
+        <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 flex flex-col gap-2 hover:shadow-sm transition-shadow min-w-0">
+          <div className="flex justify-between items-start gap-2">
+            <span className="text-[11px] text-on-surface-variant uppercase tracking-wider font-semibold truncate">Departments</span>
+            <div className="w-8 h-8 rounded-full bg-secondary/10 flex items-center justify-center text-secondary shrink-0">
               <span className="material-symbols-outlined text-[16px]">domain</span>
             </div>
           </div>
           <div className="text-2xl font-semibold text-on-surface mt-1">48</div>
-          <div className="text-[12px] text-on-surface-variant">Across 3 campuses</div>
+          <div className="text-[12px] text-on-surface-variant truncate">Across 3 campuses</div>
         </div>
 
         {/* KPI 3: Subjects */}
-        <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 flex flex-col gap-2 hover:shadow-sm transition-shadow">
-          <div className="flex justify-between items-start">
-            <span className="text-[11px] text-secondary uppercase tracking-wider font-semibold">Subjects</span>
-            <div className="w-8 h-8 rounded-full bg-secondary-fixed flex items-center justify-center text-secondary shrink-0">
+        <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 flex flex-col gap-2 hover:shadow-sm transition-shadow min-w-0">
+          <div className="flex justify-between items-start gap-2">
+            <span className="text-[11px] text-on-surface-variant uppercase tracking-wider font-semibold truncate">Subjects</span>
+            <div className="w-8 h-8 rounded-full bg-secondary/10 flex items-center justify-center text-secondary shrink-0">
               <span className="material-symbols-outlined text-[16px]">book</span>
             </div>
           </div>
           <div className="text-2xl font-semibold text-on-surface mt-1">{subjectCount}</div>
-          <div className="text-[12px] text-on-surface-variant">Active curriculum items</div>
+          <div className="text-[12px] text-on-surface-variant truncate">Active curriculum items</div>
         </div>
 
         {/* KPI 4: Active AI Jobs */}
-        <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 flex flex-col gap-2 hover:shadow-sm transition-shadow">
-          <div className="flex justify-between items-start">
-            <span className="text-[11px] text-secondary uppercase tracking-wider font-semibold">Active AI Jobs</span>
-            <div className="w-8 h-8 rounded-full bg-tertiary-fixed flex items-center justify-center text-tertiary shrink-0">
+        <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 flex flex-col gap-2 hover:shadow-sm transition-shadow min-w-0">
+          <div className="flex justify-between items-start gap-2">
+            <span className="text-[11px] text-on-surface-variant uppercase tracking-wider font-semibold truncate">Active AI Jobs</span>
+            <div className="w-8 h-8 rounded-full bg-tertiary/10 flex items-center justify-center text-tertiary shrink-0">
               <span className="material-symbols-outlined text-[16px]">psychology</span>
             </div>
           </div>
           <div className="text-2xl font-semibold text-on-surface mt-1">12</div>
           <div className="flex items-center gap-1.5 text-tertiary text-[11px] font-medium">
-            <span className="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse"></span>
-            <span>Processing</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse shrink-0"></span>
+            <span className="truncate">Processing</span>
           </div>
         </div>
 
         {/* KPI 5: Storage */}
-        <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 flex flex-col justify-between hover:shadow-sm transition-shadow sm:col-span-2 lg:col-span-1">
-          <div className="flex justify-between items-start">
-            <span className="text-[11px] text-secondary uppercase tracking-wider font-semibold">Storage Usage</span>
-            <div className="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant shrink-0">
+        <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 flex flex-col justify-between hover:shadow-sm transition-shadow sm:col-span-2 lg:col-span-1 xl:col-span-1 min-w-0">
+          <div className="flex justify-between items-start gap-2">
+            <span className="text-[11px] text-on-surface-variant uppercase tracking-wider font-semibold truncate">Storage Usage</span>
+            <div className="w-8 h-8 rounded-full bg-surface-variant flex items-center justify-center text-on-surface-variant shrink-0">
               <span className="material-symbols-outlined text-[16px]">cloud</span>
             </div>
           </div>
           <div className="mt-3">
-            <div className="flex justify-between items-end mb-2">
-              <span className="text-lg font-semibold text-on-surface">78%</span>
-              <span className="text-[11px] text-on-surface-variant">3.9TB / 5.0TB</span>
+            <div className="flex justify-between items-end mb-2 gap-2">
+              <span className="text-lg font-semibold text-on-surface shrink-0">78%</span>
+              <span className="text-[11px] text-on-surface-variant truncate">3.9TB / 5.0TB</span>
             </div>
             <div className="w-full bg-surface-variant rounded-full h-1.5 overflow-hidden">
               <div className="bg-primary h-1.5 rounded-full transition-all" style={{ width: '78%' }}></div>
