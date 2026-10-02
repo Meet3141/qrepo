@@ -22,4 +22,22 @@ export const documentService = {
   deleteDocument: (documentId) => unwrap(apiClient.delete(`/documents/${documentId}`)),
   /** Extracts text so the AI engine can use the document as context. */
   processDocument: (documentId) => unwrap(apiClient.post(`/documents/${documentId}/process`)),
+
+  /**
+   * Downloads the physical file for a document.
+   * Uses a Blob response so the Authorization header is sent (plain <a href> can't do that).
+   */
+  downloadDocument: async (documentId, fileName) => {
+    const response = await apiClient.get(`/documents/${documentId}/download`, {
+      responseType: 'blob',
+    });
+    const url = URL.createObjectURL(response.data);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  },
 };

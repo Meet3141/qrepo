@@ -39,6 +39,7 @@ export default function DocumentManagement() {
   const [uploading, setUploading] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [busyDoc, setBusyDoc] = useState(null);
+  const [downloadingDoc, setDownloadingDoc] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const fileInputRef = useRef(null);
@@ -145,6 +146,17 @@ export default function DocumentManagement() {
     } finally {
       setBusyDoc(null);
       await fetchDocuments();
+    }
+  };
+
+  const handleDownload = async (doc) => {
+    setDownloadingDoc(doc.id);
+    try {
+      await documentService.downloadDocument(doc.id, doc.file_name);
+    } catch (err) {
+      notifyError(err, `Download failed for "${doc.file_name}".`);
+    } finally {
+      setDownloadingDoc(null);
     }
   };
 
@@ -267,6 +279,13 @@ export default function DocumentManagement() {
                     <td className="p-md hidden lg:table-cell text-secondary">{new Date(doc.created_at).toLocaleDateString()}</td>
                     <td className="p-md text-right">
                         <div className="flex justify-end gap-sm md:opacity-0 md:group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                          <button onClick={() => handleDownload(doc)} disabled={downloadingDoc === doc.id}
+                                  className="text-secondary hover:text-primary p-1 rounded hover:bg-primary-container/30 disabled:opacity-50"
+                                  title="Download" aria-label={`Download ${doc.file_name}`}>
+                            <span className={`material-symbols-outlined text-[20px] ${downloadingDoc === doc.id ? 'animate-spin' : ''}`}>
+                              {downloadingDoc === doc.id ? 'sync' : 'download'}
+                            </span>
+                          </button>
                           {(doc.processing_status === 'PENDING' || doc.processing_status === 'FAILED') && (
                             <button onClick={() => handleProcess(doc)} disabled={busyDoc === doc.id}
                                     className="text-secondary hover:text-primary p-1 rounded hover:bg-primary-container/30 disabled:opacity-50"

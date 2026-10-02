@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime, timezone
-import os
+from pathlib import Path
 
 from app.document.repository import DocumentRepository
 from app.document.models import Document
@@ -26,7 +26,10 @@ class DocumentIngestionService:
         self.document_repo.db.commit()
         
         try:
-            absolute_path = os.path.abspath(document.storage_path)
+            # Resolve absolute path from storage dir to avoid CWD-dependent failures
+            from app.document.storage import DocumentStorage
+            storage_dir = DocumentStorage().storage_dir.resolve()
+            absolute_path = str(storage_dir / Path(document.storage_path).name)
             
             extracted = extract_text(absolute_path, document.file_type)
             

@@ -1,6 +1,9 @@
 import uuid
+import mimetypes
+from pathlib import Path
 from typing import List
 from fastapi import APIRouter, Depends, status, UploadFile, File
+from fastapi.responses import FileResponse
 from app.auth.constants import ROLE_ADMIN, ROLE_HOD, ROLE_FACULTY, ROLE_STUDENT
 from app.api.dependencies import get_current_active_user, RequireRole
 from app.permissions.catalog import DOCUMENTS_DELETE, DOCUMENTS_UPLOAD
@@ -10,6 +13,9 @@ from app.document.schemas import DocumentResponse, DocumentUpdate
 from app.document.service import DocumentService
 from app.document.storage import DocumentStorage
 from app.document.dependencies import get_document_service, get_document_storage, get_ingestion_service
+from app.subject.repository import UnitRepository, SubjectRepository
+from app.db.init_db import get_db
+from sqlalchemy.orm import Session
 from app.shared.responses import APIResponse
 from app.core.exceptions import AppException
 
@@ -93,6 +99,57 @@ def get_document(
     document = service.get_document(document_id)
     response_data = DocumentResponse.model_validate(document)
     return APIResponse(success=True, message="Document retrieved", data=response_data)
+
+
+@document_router.get(
+    "/{document_id}/download",
+    summary="Download the physical file for a Document",
+    response_class=FileResponse
+)
+def download_document(
+    document_id: uuid.UUID,
+    current_user: User = Depends(RequireRole([ROLE_ADMIN, ROLE_HOD, ROLE_FACULTY, ROLE_STUDENT])),
+    service: DocumentService = Depends(get_document_service),
+    storage: DocumentStorage = Depends(get_document_storage),
+    db: Session = Depends(get_db)
+):
+    document = service.get_document(document_id)
+
+    # Students may only download documents from subjects within their own department
+    if current_user.role and current_user.role.name == ROLE_STUDENT:
+        if not current_user.department_id:
+            raise AppException("Your account is not assigned to a department", status_code=403)
+        unit_repo = UnitRepository(db)
+        subject_repo = SubjectRepository(db)
+        unit = unit_repo.get_by_id(document.unit_id)
+        if not unit:
+            raise AppException("Document unit not found", status_code=404)
+        subject = subject_repo.get_by_id(unit.subject_id)
+        if not subject:
+            raise AppException("Subject not found", status_code=404)
+        # Resolve subject department via the faculty member who owns it
+        from app.auth.repository import UserRepository
+        faculty_repo = UserRepository(db)
+        faculty = faculty_repo.get_user_by_id(subject.faculty_id) if subject.faculty_id else None
+        subject_dept = faculty.department_id if faculty else None
+        if subject_dept != current_user.department_id:
+            raise AppException("You can only download documents from your own department", status_code=403)
+
+    # storage_path is stored relative (e.g. "media/documents/<uuid>.pdf").
+    # Use the storage object's resolved dir (absolute on disk) + the filename.
+    file_path = (storage.storage_dir.resolve() / Path(document.storage_path).name)
+    if not file_path.exists():
+        raise AppException("Physical file not found on server", status_code=404)
+
+    # Determine media type from stored file_type or fall back to extension sniff
+    media_type = document.file_type or (mimetypes.guess_type(document.file_name)[0] or "application/octet-stream")
+
+    return FileResponse(
+        path=str(file_path),
+        media_type=media_type,
+        filename=document.file_name,        # sets Content-Disposition: attachment; filename=...
+        headers={"Content-Disposition": f'attachment; filename="{document.file_name}"'}
+    )
 
 
 @document_router.put(
