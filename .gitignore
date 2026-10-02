@@ -5,3 +5,4 @@ __pycache__/
 venv/
 *.db
 *.sqlite3
+backend/scripts/seed_test_users.py

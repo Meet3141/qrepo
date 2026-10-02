@@ -369,7 +369,7 @@ export default function QuestionBank() {
       {/* Generation Modal */}
       {showGenModal && (
         <Modal onClose={() => setShowGenModal(false)}>
-          <div className="bg-surface-container-lowest rounded-xl shadow-lg p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+          <div className="bg-surface-container-lowest rounded-xl shadow-lg p-6 min-w-[90vw] md:min-w-[32rem] max-w-lg max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-bold flex items-center gap-2">
                 <span className="material-symbols-outlined text-primary">auto_awesome</span>
@@ -467,7 +467,7 @@ export default function QuestionBank() {
       {/* Review Modal */}
       {reviewDraft && (
         <Modal onClose={() => setReviewDraft(null)}>
-          <div className="bg-surface-container-lowest rounded-xl shadow-lg p-6 w-full max-w-md">
+          <div className="bg-surface-container-lowest rounded-xl shadow-lg p-6 min-w-[90vw] md:min-w-[28rem] max-w-md" onClick={e => e.stopPropagation()}>
             <h3 className="text-lg font-bold text-on-surface mb-4">Review Draft</h3>
             <p className="text-sm text-on-surface mb-4 line-clamp-3">{reviewDraft.question_text}</p>
 

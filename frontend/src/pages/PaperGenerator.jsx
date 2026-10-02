@@ -325,7 +325,7 @@ export default function PaperGenerator() {
       {/* Review Modal */}
       {reviewingDraft && (
         <Modal onClose={() => setReviewingDraft(null)}>
-          <div className="bg-surface-container-lowest rounded-xl shadow-lg p-6 w-full max-w-md">
+          <div className="bg-surface-container-lowest rounded-xl shadow-lg p-6 min-w-[90vw] md:min-w-[28rem] max-w-md" onClick={e => e.stopPropagation()}>
             <h3 className="text-lg font-bold text-on-surface mb-3">Review Question Draft</h3>
             <p className="text-sm text-on-surface mb-4 line-clamp-3">{reviewingDraft.question_text}</p>
 
