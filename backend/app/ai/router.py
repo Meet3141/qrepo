@@ -18,6 +18,8 @@ from app.ai.schemas import (
     QuestionGenerationResponse,
 )
 from app.ai.services import QuestionGenerationService
+from app.permissions.catalog import AI_GENERATE_QUESTIONS
+from app.permissions.dependencies import RequirePermission
 from app.shared.responses import APIResponse
 
 ai_router = APIRouter()
@@ -58,7 +60,7 @@ def to_generation_response(generation: AIGeneration) -> QuestionGenerationRespon
 )
 def generate_questions(
     request: QuestionGenerationRequest,
-    current_user: User = Depends(RequireRole(AI_ROLES)),
+    current_user: User = Depends(RequirePermission(AI_GENERATE_QUESTIONS)),
     service: QuestionGenerationService = Depends(get_question_generation_service),
 ):
     # Sync endpoint: the provider call blocks, so FastAPI runs it in the threadpool

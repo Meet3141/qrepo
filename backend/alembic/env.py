@@ -26,6 +26,9 @@ from app.auth.models import Role, User
 from app.subject.models import Subject, Unit
 from app.document.models import Document
 from app.ai.models import AIGeneration, QuestionDraft, DraftFeedback
+from app.department.models import Department
+from app.permissions.models import RolePermission
+from app.papers.models import Paper, PaperQuestion, PaperComment
 
 target_metadata = Base.metadata
 escaped_url = str(settings.DATABASE_URL).replace('%', '%%')

@@ -43,6 +43,8 @@ class UserResponse(BaseModel):
     is_active: bool
     created_at: datetime
     role: Optional[RoleResponse] = None
+    full_name: Optional[str] = None
+    department_id: Optional[uuid.UUID] = None
 
     model_config = {"from_attributes": True}
 

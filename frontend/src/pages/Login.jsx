@@ -1,36 +1,37 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '../api/auth';
+import { notifyError } from '../api/errors';
+import { dashboardFor, getRole, getToken } from '../api/session';
+import { toast } from '../components/Toast';
+
+const NOT_AVAILABLE = {
+  sso: 'Single sign-on is not configured for QRepo yet. Please sign in with your email and password.',
+  reset: 'Password reset is not available yet. Please contact your administrator.',
+};
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [remember, setRemember] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
+  // Already signed in: skip the form
+  useEffect(() => {
+    if (getToken() && getRole()) navigate(dashboardFor(getRole()), { replace: true });
+  }, [navigate]);
+
   const handleLogin = async (e) => {
     e.preventDefault();
-    setError('');
+    if (isLoading) return;
     setIsLoading(true);
-    
     try {
-      await authService.login(email, password);
-      const user = await authService.getCurrentUser();
-      
-      const roleName = user.role?.name || 'Student';
-      localStorage.setItem('user_role', roleName);
-      
-      // Success, route to dashboard based on role
-      const role = roleName.toLowerCase();
-      if (role === 'admin') navigate('/dashboard/admin');
-      else if (role === 'faculty') navigate('/dashboard/faculty');
-      else if (role === 'hod') navigate('/dashboard/hod');
-      else navigate('/dashboard/student');
+      const user = await authService.login(email.trim(), password, remember);
+      navigate(dashboardFor(user.role?.name), { replace: true });
     } catch (err) {
-      console.error(err);
-      setError(err.response?.data?.message || 'Invalid credentials or network error.');
-    } finally {
+      authService.logout();
+      notifyError(err, 'Sign in failed.');
       setIsLoading(false);
     }
   };
@@ -49,12 +50,6 @@ export default function Login() {
         {/* Form Section */}
         <div className="px-8 pb-8">
           <form onSubmit={handleLogin} className="space-y-4">
-            {error && (
-              <div className="p-3 bg-error-container text-on-error-container text-sm rounded-lg">
-                {error}
-              </div>
-            )}
-            
             {/* Email Input */}
             <div className="space-y-2">
               <label className="text-xs font-semibold text-on-surface block" htmlFor="email">Email Address</label>
@@ -94,6 +89,8 @@ export default function Login() {
                   id="remember-me" 
                   name="remember-me" 
                   type="checkbox"
+                  checked={remember}
+                  onChange={e => setRemember(e.target.checked)}
                   className="h-4 w-4 rounded border-outline-variant text-primary focus:ring-primary bg-surface-container-low cursor-pointer" 
                 />
                 <label className="ml-2 text-sm text-on-surface-variant cursor-pointer" htmlFor="remember-me">
@@ -101,9 +98,9 @@ export default function Login() {
                 </label>
               </div>
               <div className="text-sm">
-                <a className="text-primary hover:text-primary-container transition-colors" href="#">
+                <button type="button" onClick={() => toast.info(NOT_AVAILABLE.reset)} className="text-primary hover:text-primary-container transition-colors">
                   Forgot password?
-                </a>
+                </button>
               </div>
             </div>
             
@@ -131,7 +128,7 @@ export default function Login() {
 
           {/* Secondary Login Options */}
           <div className="mt-6 space-y-2">
-            <button type="button" className="w-full flex items-center justify-center gap-2 py-[10px] px-[16px] bg-surface-container-lowest border border-outline-variant rounded text-on-surface text-sm font-medium hover:bg-surface-container-low transition-colors active:scale-[0.98]">
+            <button type="button" onClick={() => toast.info(NOT_AVAILABLE.sso)} className="w-full flex items-center justify-center gap-2 py-[10px] px-[16px] bg-surface-container-lowest border border-outline-variant rounded text-on-surface text-sm font-medium hover:bg-surface-container-low transition-colors active:scale-[0.98]">
               <svg aria-hidden="true" className="h-[18px] w-[18px]" viewBox="0 0 24 24">
                 <path d="M12.0003 4.75C13.7703 4.75 15.3553 5.36 16.6053 6.54998L20.0303 3.125C17.9502 1.19 15.2353 0 12.0003 0C7.31028 0 3.25527 2.69 1.28027 6.60998L5.27028 9.70498C6.21525 6.86 8.87028 4.75 12.0003 4.75Z" fill="#EA4335"></path>
                 <path d="M23.49 12.275C23.49 11.49 23.415 10.73 23.3 10H12V14.51H18.47C18.18 15.99 17.34 17.25 16.08 18.1L19.945 21.1C22.2 19.01 23.49 15.92 23.49 12.275Z" fill="#4285F4"></path>
@@ -140,7 +137,7 @@ export default function Login() {
               </svg>
               Google
             </button>
-            <button type="button" className="w-full flex items-center justify-center gap-2 py-[10px] px-[16px] bg-surface-container-lowest border border-outline-variant rounded text-on-surface text-sm font-medium hover:bg-surface-container-low transition-colors active:scale-[0.98]">
+            <button type="button" onClick={() => toast.info(NOT_AVAILABLE.sso)} className="w-full flex items-center justify-center gap-2 py-[10px] px-[16px] bg-surface-container-lowest border border-outline-variant rounded text-on-surface text-sm font-medium hover:bg-surface-container-low transition-colors active:scale-[0.98]">
               <svg aria-hidden="true" className="h-[18px] w-[18px]" viewBox="0 0 21 21">
                 <rect fill="#F25022" height="9" width="9" x="1" y="1"></rect>
                 <rect fill="#7FBA00" height="9" width="9" x="11" y="1"></rect>

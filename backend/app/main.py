@@ -12,6 +12,9 @@ from app.core.exceptions import global_exception_handler, app_exception_handler,
 from app.auth.models import User, Role
 from app.subject.models import Subject, Unit
 from app.ai import models as ai_models  # noqa: F401  (AI generations, drafts, feedback)
+from app.department import models as department_models  # noqa: F401
+from app.permissions import models as permission_models  # noqa: F401
+from app.papers import models as paper_models  # noqa: F401
 
 from contextlib import asynccontextmanager
 from app.ai import get_provider
@@ -37,6 +40,8 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    # Let the browser read download filenames (CSV/PDF exports) on cross-origin responses
+    expose_headers=["Content-Disposition"],
 )
 
 # Exception handlers

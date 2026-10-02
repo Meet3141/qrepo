@@ -2,8 +2,19 @@ import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
+import { RequireAuth, SessionProvider } from './Session';
 
 export default function Layout() {
+  return (
+    <RequireAuth>
+      <SessionProvider>
+        <Shell />
+      </SessionProvider>
+    </RequireAuth>
+  );
+}
+
+function Shell() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (

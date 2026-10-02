@@ -1,24 +1,44 @@
 import React, { useState, useEffect } from 'react';
-import { apiClient } from '../api/client';
+import { subjectService } from '../api/subjects';
+import { unitService } from '../api/units';
+import { notifyError } from '../api/errors';
+import { LoadError } from '../components/ui';
 
 export default function StudentSubjects() {
   const [subjects, setSubjects] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [openId, setOpenId] = useState(null);
+  const [units, setUnits] = useState({});
 
-  useEffect(() => {
-    const fetchSubjects = async () => {
-      try {
-        const response = await apiClient.get('/subjects');
-        setSubjects(response.data.data || []);
-      } catch (err) {
-        console.error("Failed to fetch subjects", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchSubjects();
-  }, []);
+  const fetchSubjects = async () => {
+    setLoading(true);
+    setFailed(false);
+    try {
+      setSubjects(await subjectService.getSubjects());
+    } catch (err) {
+      setFailed(true);
+      notifyError(err, 'Failed to load subjects.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { fetchSubjects(); }, []);
+
+  const toggleUnits = async (subjectId) => {
+    if (openId === subjectId) return setOpenId(null);
+    setOpenId(subjectId);
+    if (units[subjectId]) return;
+    try {
+      const list = await unitService.getUnitsBySubject(subjectId);
+      setUnits((u) => ({ ...u, [subjectId]: [...list].sort((a, b) => a.unit_number - b.unit_number) }));
+    } catch (err) {
+      setOpenId(null);
+      notifyError(err, 'Failed to load units.');
+    }
+  };
 
   const filtered = subjects.filter(s =>
     s.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -44,17 +64,19 @@ export default function StudentSubjects() {
         </div>
       </div>
 
+      {failed && <LoadError what="subjects" onRetry={fetchSubjects} />}
+
       {/* Subjects Grid */}
       {loading ? (
         <div className="flex items-center justify-center p-12">
           <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
         </div>
-      ) : filtered.length === 0 ? (
+      ) : failed ? null : filtered.length === 0 ? (
         <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-12 flex flex-col items-center gap-4">
           <span className="material-symbols-outlined text-[56px] text-outline">school</span>
           <h3 className="text-[15px] font-semibold text-on-surface">No subjects found</h3>
           <p className="text-[13px] text-on-surface-variant text-center max-w-md">
-            {searchTerm ? 'No subjects match your search.' : 'You are not enrolled in any subjects yet.'}
+            {searchTerm ? 'No subjects match your search.' : 'No subjects have been added yet.'}
           </p>
         </div>
       ) : (
@@ -70,13 +92,24 @@ export default function StudentSubjects() {
                   <p className="text-[11px] text-on-surface-variant">{subject.code || 'No code'}</p>
                 </div>
               </div>
-              <div className="flex items-center justify-between pt-2 border-t border-outline-variant/50">
-                <span className="text-[11px] text-on-surface-variant">
-                  {subject.semester ? `Semester ${subject.semester}` : 'Current'}
-                </span>
-                <button className="text-primary text-[12px] font-medium hover:underline flex items-center gap-1">
-                  <span>View</span>
-                  <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+              {subject.description && <p className="text-[12px] text-on-surface-variant line-clamp-2">{subject.description}</p>}
+              {openId === subject.id && (
+                <ul className="flex flex-col gap-1 text-[12px]">
+                  {!units[subject.id] ? (
+                    <li className="text-secondary">Loading units...</li>
+                  ) : units[subject.id].length === 0 ? (
+                    <li className="text-on-surface-variant">No units yet.</li>
+                  ) : units[subject.id].map((u) => (
+                    <li key={u.id} className="text-on-surface"><span className="font-semibold text-primary">Unit {u.unit_number}:</span> {u.title}</li>
+                  ))}
+                </ul>
+              )}
+              <div className="flex items-center justify-between pt-2 border-t border-outline-variant/50 mt-auto">
+                <span className="text-[11px] text-on-surface-variant">Units</span>
+                <button onClick={() => toggleUnits(subject.id)} aria-expanded={openId === subject.id}
+                        className="text-primary text-[12px] font-medium hover:underline flex items-center gap-1">
+                  <span>{openId === subject.id ? 'Hide' : 'View'}</span>
+                  <span className="material-symbols-outlined text-[14px]">{openId === subject.id ? 'expand_less' : 'arrow_forward'}</span>
                 </button>
               </div>
             </div>

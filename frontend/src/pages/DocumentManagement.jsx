@@ -1,141 +1,157 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { apiClient } from '../api/client';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { subjectService } from '../api/subjects';
+import { unitService } from '../api/units';
+import { DOCUMENT_RULES, documentService } from '../api/documents';
+import { notifyError } from '../api/errors';
+import { PERMISSIONS } from '../api/session';
+import { useSession } from '../components/Session';
+import { toast } from '../components/Toast';
+import { ConfirmDialog, formatBytes } from '../components/ui';
+
+const STATUS_STYLES = {
+  COMPLETED: 'bg-primary-container text-on-primary-container',
+  FAILED: 'bg-error-container text-on-error-container',
+  PROCESSING: 'bg-surface-variant text-on-surface-variant animate-pulse',
+};
+
+/** Client-side copy of the backend upload rules, so obviously invalid files fail fast. */
+function validateFile(file) {
+  const ext = file.name.includes('.') ? `.${file.name.split('.').pop().toLowerCase()}` : '';
+  if (!DOCUMENT_RULES.extensions.includes(ext)) return `"${file.name}" is not supported. Upload a PDF, DOCX or TXT file.`;
+  if (file.size > DOCUMENT_RULES.maxBytes) return `"${file.name}" is larger than ${formatBytes(DOCUMENT_RULES.maxBytes)}.`;
+  if (file.size === 0) return `"${file.name}" is empty.`;
+  return null;
+}
 
 export default function DocumentManagement() {
+  const { can } = useSession();
+  // Permission-matrix driven (null while loading: hide until known)
+  const canUpload = can(PERMISSIONS.DOCUMENTS_UPLOAD) === true;
+  const canDelete = can(PERMISSIONS.DOCUMENTS_DELETE) === true;
+
   const [documents, setDocuments] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [subjects, setSubjects] = useState([]);
   const [units, setUnits] = useState([]);
   const [selectedSubject, setSelectedSubject] = useState('');
   const [selectedUnit, setSelectedUnit] = useState('');
-  
+
   const [uploading, setUploading] = useState(false);
-  const [uploadError, setUploadError] = useState('');
+  const [dragging, setDragging] = useState(false);
+  const [busyDoc, setBusyDoc] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleting, setDeleting] = useState(false);
   const fileInputRef = useRef(null);
 
-  const role = localStorage.getItem('user_role') || 'Student';
-  const canManage = ['Admin', 'HOD', 'Faculty'].includes(role);
+  useEffect(() => {
+    subjectService.getSubjects().then(setSubjects).catch((err) => notifyError(err, 'Failed to load subjects.'));
+  }, []);
 
-  const fetchSubjects = async () => {
-    try {
-      const response = await apiClient.get('/subjects');
-      setSubjects(response.data.data || []);
-    } catch (err) {
-      console.error("Failed to fetch subjects", err);
-    }
-  };
+  useEffect(() => {
+    setUnits([]);
+    if (!selectedSubject) return;
+    unitService.getUnitsBySubject(selectedSubject)
+      .then((list) => setUnits([...list].sort((a, b) => a.unit_number - b.unit_number)))
+      .catch((err) => notifyError(err, 'Failed to load units.'));
+  }, [selectedSubject]);
 
-  const fetchUnits = async (subjectId) => {
-    try {
-      const response = await apiClient.get(`/subjects/${subjectId}/units`);
-      setUnits(response.data.data || []);
-    } catch (err) {
-      console.error("Failed to fetch units", err);
-    }
-  };
-
-  const fetchDocuments = async () => {
+  const fetchDocuments = useCallback(async () => {
     if (!selectedUnit) {
       setDocuments([]);
-      setLoading(false);
       return;
     }
     setLoading(true);
     try {
-      const response = await apiClient.get(`/units/${selectedUnit}/documents`);
-      setDocuments(response.data.data || []);
+      setDocuments(await documentService.getDocumentsByUnit(selectedUnit));
     } catch (err) {
-      console.error("Failed to fetch documents", err);
+      setDocuments([]);
+      notifyError(err, 'Failed to load documents.');
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchSubjects();
-  }, []);
-
-  useEffect(() => {
-    fetchDocuments();
   }, [selectedUnit]);
 
+  useEffect(() => { fetchDocuments(); }, [fetchDocuments]);
+
   const handleSubjectChange = (e) => {
-    const subjectId = e.target.value;
-    setSelectedSubject(subjectId);
+    setSelectedSubject(e.target.value);
     setSelectedUnit('');
-    setUnits([]);
-    if (subjectId) {
-      fetchUnits(subjectId);
-    } else {
-      fetchDocuments(); // Refetch global
-    }
   };
 
-  const handleUnitChange = (e) => {
-    setSelectedUnit(e.target.value);
+  const upload = async (files) => {
+    if (!selectedUnit) return toast.error('Select a subject and unit before uploading.');
+    const list = [...files];
+    const valid = list.filter((file) => {
+      const problem = validateFile(file);
+      if (problem) toast.error(problem);
+      return !problem;
+    });
+    if (!valid.length) return;
+
+    setUploading(true);
+    let uploaded = 0;
+    for (const file of valid) {
+      try {
+        await documentService.uploadDocument(selectedUnit, file);
+        uploaded += 1;
+      } catch (err) {
+        notifyError(err, `Uploading "${file.name}" failed.`);
+      }
+    }
+    setUploading(false);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (uploaded) {
+      toast.success(uploaded === 1 ? `"${valid[0].name}" uploaded. Extract its text to use it for AI questions.` : `${uploaded} documents uploaded.`);
+      await fetchDocuments();
+    }
   };
 
   const handleFileClick = () => {
-    if (!selectedUnit) {
-      alert('Please select a Subject and Unit first before uploading.');
-      return;
-    }
+    if (uploading) return;
+    if (!selectedUnit) return toast.info('Select a subject and unit first, then choose files to upload.');
     fileInputRef.current?.click();
   };
 
-  const handleFileChange = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setDragging(false);
+    if (!uploading && e.dataTransfer.files?.length) upload(e.dataTransfer.files);
+  };
 
-    if (!selectedUnit) {
-      setUploadError('Unit must be selected');
-      return;
-    }
-
-    setUploading(true);
-    setUploadError('');
-
-    const formData = new FormData();
-    formData.append('file', file);
-
+  const handleDelete = async () => {
+    setDeleting(true);
     try {
-      await apiClient.post(`/units/${selectedUnit}/documents`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      // Refresh documents
+      await documentService.deleteDocument(deleteTarget.id);
+      toast.success(`"${deleteTarget.file_name}" deleted.`);
+      setDeleteTarget(null);
       await fetchDocuments();
     } catch (err) {
-      setUploadError(err.response?.data?.message || err.response?.data?.detail || 'Upload failed');
+      notifyError(err, 'Delete failed.');
     } finally {
-      setUploading(false);
-      // reset file input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
+      setDeleting(false);
     }
   };
 
-  const handleDelete = async (docId) => {
-    if (!window.confirm("Are you sure you want to delete this document?")) return;
+  const handleProcess = async (doc) => {
+    setBusyDoc(doc.id);
+    setDocuments((docs) => docs.map((d) => (d.id === doc.id ? { ...d, processing_status: 'PROCESSING' } : d)));
     try {
-      await apiClient.delete(`/documents/${docId}`);
-      await fetchDocuments();
+      const result = await documentService.processDocument(doc.id);
+      toast.success(result?.processing_status === 'COMPLETED'
+        ? `Text extracted from "${doc.file_name}".`
+        : `Processing of "${doc.file_name}" started.`);
     } catch (err) {
-      alert(err.response?.data?.message || 'Delete failed');
+      notifyError(err, `Text extraction failed for "${doc.file_name}".`);
+    } finally {
+      setBusyDoc(null);
+      await fetchDocuments();
     }
   };
 
-  const handleProcess = async (docId) => {
-    try {
-      await apiClient.post(`/documents/${docId}/process`);
-      await fetchDocuments();
-    } catch (err) {
-      alert(err.response?.data?.message || 'Process failed');
-    }
-  };
+  const unitLabel = units.find((u) => u.id === selectedUnit);
 
   return (
-    <div className="max-w-container-max mx-auto py-lg md:py-xl w-full flex flex-col gap-xl">
+    <div className="max-w-container-max mx-auto w-full flex flex-col gap-xl">
       <div className="flex flex-col gap-sm">
         <h2 className="font-display text-3xl font-bold text-on-surface">Document Management</h2>
         <p className="text-secondary">Upload, organize, and manage source documents for assessment generation.</p>
@@ -143,100 +159,95 @@ export default function DocumentManagement() {
 
       {/* Filter / Selection Area */}
       <div className="flex flex-col md:flex-row gap-4 bg-surface-container-lowest p-4 rounded-xl border border-outline-variant shadow-sm">
-        <div className="flex-1">
-          <label className="block text-xs font-semibold text-secondary mb-1">Select Subject</label>
-          <select 
-            value={selectedSubject} 
+        <label className="flex-1">
+          <span className="block text-xs font-semibold text-secondary mb-1">Subject</span>
+          <select
+            value={selectedSubject}
             onChange={handleSubjectChange}
             className="w-full h-10 px-3 bg-surface border border-outline-variant rounded-lg text-sm text-on-surface outline-none focus:border-primary"
           >
-            <option value="">All Subjects</option>
-            {subjects.map(s => <option key={s.id} value={s.id}>{s.code} - {s.name}</option>)}
+            <option value="">Select a subject</option>
+            {subjects.map((s) => <option key={s.id} value={s.id}>{s.code} - {s.name}</option>)}
           </select>
-        </div>
-        <div className="flex-1">
-          <label className="block text-xs font-semibold text-secondary mb-1">Select Unit</label>
-          <select 
-            value={selectedUnit} 
-            onChange={handleUnitChange}
+        </label>
+        <label className="flex-1">
+          <span className="block text-xs font-semibold text-secondary mb-1">Unit</span>
+          <select
+            value={selectedUnit}
+            onChange={(e) => setSelectedUnit(e.target.value)}
             disabled={!selectedSubject}
             className="w-full h-10 px-3 bg-surface border border-outline-variant rounded-lg text-sm text-on-surface outline-none focus:border-primary disabled:opacity-50"
           >
-            <option value="">All Units</option>
-            {units.map(u => <option key={u.id} value={u.id}>Unit {u.unit_number}: {u.title}</option>)}
+            <option value="">{selectedSubject && units.length === 0 ? 'This subject has no units yet' : 'Select a unit'}</option>
+            {units.map((u) => <option key={u.id} value={u.id}>Unit {u.unit_number}: {u.title}</option>)}
           </select>
-        </div>
+        </label>
       </div>
-      
+
       {/* Drag & Drop Area */}
-      {canManage && (
-        <div 
+      {canUpload && (
+        <div
+          role="button"
+          tabIndex={0}
           onClick={handleFileClick}
-          className={`border-2 border-dashed ${uploadError ? 'border-error text-error' : 'border-primary-fixed-dim hover:border-primary'} bg-surface-container-low rounded-xl p-xl flex flex-col items-center justify-center text-center relative overflow-hidden group transition-colors ${!selectedUnit ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleFileClick(); } }}
+          onDragOver={(e) => { e.preventDefault(); if (selectedUnit) setDragging(true); }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={handleDrop}
+          aria-disabled={!selectedUnit || uploading}
+          className={`border-2 border-dashed ${dragging ? 'border-primary bg-primary-fixed/20' : 'border-primary-fixed-dim hover:border-primary bg-surface-container-low'} rounded-xl p-xl flex flex-col items-center justify-center text-center relative overflow-hidden group transition-colors ${!selectedUnit ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
         >
-          <input 
-            type="file" 
-            ref={fileInputRef} 
-            onChange={handleFileChange} 
-            className="hidden" 
-            accept=".pdf,.doc,.docx,.txt"
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={(e) => upload(e.target.files)}
+            className="hidden"
+            accept={DOCUMENT_RULES.accept}
+            multiple
           />
           <div className="absolute inset-0 bg-primary-fixed opacity-0 group-hover:opacity-10 transition-opacity"></div>
-          <div className={`w-16 h-16 rounded-full ${uploadError ? 'bg-error-container text-on-error-container' : 'bg-primary-container text-on-primary-container'} flex items-center justify-center mb-md shadow-sm`}>
-            {uploading ? (
-              <span className="material-symbols-outlined text-[36px] animate-spin">sync</span>
-            ) : (
-              <span className="material-symbols-outlined text-[36px]" style={{ fontVariationSettings: "'FILL' 0" }}>
-                {uploadError ? 'error' : 'cloud_upload'}
-              </span>
-            )}
+          <div className="w-16 h-16 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center mb-md shadow-sm">
+            <span className={`material-symbols-outlined text-[36px] ${uploading ? 'animate-spin' : ''}`} style={{ fontVariationSettings: "'FILL' 0" }}>
+              {uploading ? 'sync' : 'cloud_upload'}
+            </span>
           </div>
           <h3 className="font-bold text-xl text-on-surface mb-xs">
             {uploading ? 'Uploading...' : 'Drag & Drop files here'}
           </h3>
           <p className="text-secondary mb-md">
-            {uploadError || (uploading ? 'Please wait...' : 'or click to browse from your computer')}
+            {uploading ? 'Please wait...' : selectedUnit ? 'or click to browse from your computer' : 'Select a subject and unit to enable uploads'}
           </p>
-          <p className="text-xs font-semibold text-outline">Supported files: PDF, DOC, DOCX, TXT. Max size: 10MB.</p>
-          
-          <button 
-            type="button" 
-            disabled={!selectedUnit || uploading}
-            className="mt-md bg-surface-container-lowest border border-outline-variant text-secondary py-2 px-4 rounded-lg text-sm font-medium hover:bg-surface-container-low transition-colors shadow-sm disabled:opacity-50"
-          >
+          <p className="text-xs font-semibold text-outline">Supported files: PDF, DOCX, TXT. Max size: {formatBytes(DOCUMENT_RULES.maxBytes)}.</p>
+
+          <span className="mt-md bg-surface-container-lowest border border-outline-variant text-secondary py-2 px-4 rounded-lg text-sm font-medium shadow-sm">
             {selectedUnit ? 'Select Files' : 'Select a Unit First'}
-          </button>
+          </span>
         </div>
       )}
-      
+
       {/* Uploaded Files List */}
       <div className="flex flex-col gap-md">
-        <div className="flex justify-between items-center">
-          <h3 className="font-bold text-xl text-on-surface">Documents {selectedUnit && '- Selected Unit'}</h3>
-          <div className="flex gap-sm">
-            <button className="text-secondary hover:text-primary transition-colors p-1"><span className="material-symbols-outlined">filter_list</span></button>
-            <button className="text-secondary hover:text-primary transition-colors p-1"><span className="material-symbols-outlined">sort</span></button>
-          </div>
-        </div>
-        
+        <h3 className="font-bold text-xl text-on-surface">
+          Documents{unitLabel ? ` — Unit ${unitLabel.unit_number}: ${unitLabel.title}` : ''}
+        </h3>
+
         <div className="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-sm overflow-hidden overflow-x-auto">
           <table className="w-full text-left border-collapse min-w-[700px]">
             <thead className="bg-surface-container-low border-b border-outline-variant text-xs text-secondary font-semibold">
               <tr>
                 <th className="p-md">Document Name</th>
                 <th className="p-md">Type</th>
+                <th className="p-md">Size</th>
                 <th className="p-md">Status</th>
                 <th className="p-md hidden lg:table-cell">Date Uploaded</th>
-                {canManage && <th className="p-md text-right">Actions</th>}
+                <th className="p-md text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="text-sm text-on-surface divide-y divide-outline-variant">
               {loading ? (
-                <tr>
-                  <td colSpan={canManage ? "5" : "4"} className="p-4 text-center text-secondary">Loading documents...</td>
-                </tr>
+                <tr><td colSpan={6} className="p-4 text-center text-secondary">Loading documents...</td></tr>
               ) : documents.length > 0 ? (
-                documents.map(doc => (
+                documents.map((doc) => (
                   <tr key={doc.id} className="hover:bg-surface-container-low transition-colors group">
                     <td className="p-md">
                       <div className="flex items-center gap-sm">
@@ -247,37 +258,38 @@ export default function DocumentManagement() {
                       </div>
                     </td>
                     <td className="p-md"><span className="bg-surface-variant text-on-surface-variant px-2 py-1 rounded-full text-[11px] font-medium uppercase">{doc.file_name.split('.').pop()}</span></td>
+                    <td className="p-md text-secondary">{formatBytes(doc.file_size)}</td>
                     <td className="p-md">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        doc.processing_status === 'COMPLETED' ? 'bg-primary-container text-on-primary-container' : 
-                        doc.processing_status === 'FAILED' ? 'bg-error-container text-on-error-container' : 
-                        doc.processing_status === 'PROCESSING' ? 'bg-surface-variant text-on-surface-variant animate-pulse' :
-                        'bg-surface-variant text-on-surface-variant'
-                      }`}>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${STATUS_STYLES[doc.processing_status] || 'bg-surface-variant text-on-surface-variant'}`}>
                         {doc.processing_status}
                       </span>
                     </td>
                     <td className="p-md hidden lg:table-cell text-secondary">{new Date(doc.created_at).toLocaleDateString()}</td>
-                    {canManage && (
-                      <td className="p-md text-right">
-                        <div className="flex justify-end gap-sm opacity-0 group-hover:opacity-100 transition-opacity">
-                          {doc.processing_status === 'PENDING' || doc.processing_status === 'FAILED' ? (
-                            <button onClick={() => handleProcess(doc.id)} className="text-secondary hover:text-primary p-1 rounded hover:bg-primary-container/30" title="Extract Text">
-                              <span className="material-symbols-outlined text-[20px]">transform</span>
+                    <td className="p-md text-right">
+                        <div className="flex justify-end gap-sm md:opacity-0 md:group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                          {(doc.processing_status === 'PENDING' || doc.processing_status === 'FAILED') && (
+                            <button onClick={() => handleProcess(doc)} disabled={busyDoc === doc.id}
+                                    className="text-secondary hover:text-primary p-1 rounded hover:bg-primary-container/30 disabled:opacity-50"
+                                    title="Extract text" aria-label={`Extract text from ${doc.file_name}`}>
+                              <span className={`material-symbols-outlined text-[20px] ${busyDoc === doc.id ? 'animate-spin' : ''}`}>
+                                {busyDoc === doc.id ? 'sync' : 'transform'}
+                              </span>
                             </button>
-                          ) : null}
-                          <button onClick={() => handleDelete(doc.id)} className="text-secondary hover:text-error p-1 rounded hover:bg-error-container/30" title="Delete">
-                            <span className="material-symbols-outlined text-[20px]">delete</span>
-                          </button>
+                          )}
+                          {canDelete && (
+                            <button onClick={() => setDeleteTarget(doc)} className="text-secondary hover:text-error p-1 rounded hover:bg-error-container/30"
+                                    title="Delete" aria-label={`Delete ${doc.file_name}`}>
+                              <span className="material-symbols-outlined text-[20px]">delete</span>
+                            </button>
+                          )}
                         </div>
-                      </td>
-                    )}
+                    </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={canManage ? "5" : "4"} className="p-4 text-center text-secondary">
-                    {selectedUnit ? 'No documents found for this unit.' : 'No documents found. Select a unit to upload.'}
+                  <td colSpan={6} className="p-4 text-center text-secondary">
+                    {selectedUnit ? 'No documents in this unit yet.' : 'Select a subject and unit to see its documents.'}
                   </td>
                 </tr>
               )}
@@ -285,6 +297,17 @@ export default function DocumentManagement() {
           </table>
         </div>
       </div>
+
+      {deleteTarget && (
+        <ConfirmDialog
+          title="Delete Document"
+          message={<>Delete <strong>{deleteTarget.file_name}</strong>? Its extracted text will no longer be used for AI questions. This cannot be undone.</>}
+          confirmLabel="Delete"
+          busy={deleting}
+          onConfirm={handleDelete}
+          onClose={() => setDeleteTarget(null)}
+        />
+      )}
     </div>
   );
 }

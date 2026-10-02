@@ -58,6 +58,14 @@
   --spacing-gutter: 24px;
   --spacing-container-max: 1280px;
   --spacing-margin-mobile: 16px;
+  /* The custom --spacing-xs..xl tokens above are also matched by max-w-xs..xl (Tailwind checks
+     --max-width, then --spacing, then --container), which made e.g. max-w-md 16px wide and
+     collapsed modals. --max-width-* takes priority, restoring the standard sizes. */
+  --max-width-xs: 20rem;
+  --max-width-sm: 24rem;
+  --max-width-md: 28rem;
+  --max-width-lg: 32rem;
+  --max-width-xl: 36rem;
 }
 
 @layer base {

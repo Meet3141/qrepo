@@ -1,15 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import { aiService } from '../api/ai';
 import { subjectService } from '../api/subjects';
-import { apiClient } from '../api/client';
+import { unitService } from '../api/units';
+import { notifyError } from '../api/errors';
+import { PERMISSIONS } from '../api/session';
 import Modal from '../components/Modal';
+import DraftReviewDialog, { DraftCard } from '../components/DraftReview';
+import { useSession } from '../components/Session';
+import { toast } from '../components/Toast';
+import { LoadError } from '../components/ui';
 
 export default function QuestionBank() {
+  const { can } = useSession();
+  const canGenerate = can(PERMISSIONS.AI_GENERATE_QUESTIONS) !== false;
   const [generations, setGenerations] = useState([]);
   const [subjects, setSubjects] = useState([]);
   const [units, setUnits] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [failed, setFailed] = useState(false);
 
   // Filters
   const [filters, setFilters] = useState({
@@ -34,58 +42,37 @@ export default function QuestionBank() {
     target_audience: ''
   });
   const [genLoading, setGenLoading] = useState(false);
-  const [genError, setGenError] = useState(null);
 
   // Review modal
   const [reviewDraft, setReviewDraft] = useState(null);
-  const [reviewAction, setReviewAction] = useState('ACCEPT');
-  const [reviewComment, setReviewComment] = useState('');
-  const [reviewRating, setReviewRating] = useState('');
-  const [rejectionReason, setRejectionReason] = useState('');
-  const [reviewLoading, setReviewLoading] = useState(false);
 
   useEffect(() => {
-    fetchSubjects();
+    subjectService.getSubjects().then(setSubjects).catch((err) => notifyError(err, 'Failed to load subjects.'));
   }, []);
-
-  useEffect(() => {
-    fetchGenerations();
-  }, [filters]);
-
-  const fetchSubjects = async () => {
-    try {
-      const data = await subjectService.getSubjects();
-      setSubjects(data.data || []);
-    } catch (err) {
-      console.error('Failed to load subjects', err);
-    }
-  };
 
   const fetchUnits = async (subjectId) => {
     try {
-      const response = await apiClient.get(`/subjects/${subjectId}/units`);
-      setUnits(response.data.data || []);
+      setUnits(await unitService.getUnitsBySubject(subjectId));
     } catch (err) {
-      console.error('Failed to load units', err);
+      setUnits([]);
+      notifyError(err, 'Failed to load units.');
     }
   };
 
-  const fetchGenerations = async () => {
+  const fetchGenerations = useCallback(async () => {
     setLoading(true);
+    setFailed(false);
     try {
-      const params = {};
-      if (filters.subject_id) params.subject_id = filters.subject_id;
-      if (filters.limit) params.limit = filters.limit;
-      const data = await aiService.listGenerations(params);
-      setGenerations(data.data || []);
-      setError(null);
+      setGenerations(await aiService.listGenerations({ subject_id: filters.subject_id, limit: Number(filters.limit) }));
     } catch (err) {
-      console.error('Failed to load generations', err);
-      setError('Failed to load generations. You might not have permission or the server is unreachable.');
+      setFailed(true);
+      notifyError(err, 'Failed to load generations.');
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters]);
+
+  useEffect(() => { fetchGenerations(); }, [fetchGenerations]);
 
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
@@ -103,11 +90,9 @@ export default function QuestionBank() {
     }
     setExpandedLoading(true);
     try {
-      const data = await aiService.getGeneration(genId);
-      setExpandedGen(data.data);
+      setExpandedGen(await aiService.getGeneration(genId));
     } catch (err) {
-      console.error('Failed to load generation details', err);
-      alert(err.response?.data?.message || 'Failed to load generation details');
+      notifyError(err, 'Failed to load the generated questions.');
     } finally {
       setExpandedLoading(false);
     }
@@ -115,8 +100,8 @@ export default function QuestionBank() {
 
   const handleGenerate = async (e) => {
     e.preventDefault();
+    if (genLoading) return;
     setGenLoading(true);
-    setGenError(null);
 
     const payload = {
       subject_id: genParams.subject_id,
@@ -132,59 +117,30 @@ export default function QuestionBank() {
     }
 
     try {
-      await aiService.generateQuestions(payload);
+      const generation = await aiService.generateQuestions(payload);
       setShowGenModal(false);
-      fetchGenerations();
+      toast.success(`${generation.questions?.length || 0} question drafts generated. Review them below.`);
+      setExpandedGen(generation);
+      await fetchGenerations();
     } catch (err) {
-      setGenError(err.response?.data?.message || 'Generation failed');
+      notifyError(err, 'Question generation failed.');
     } finally {
       setGenLoading(false);
     }
   };
 
-  const openReview = (draft) => {
-    setReviewDraft(draft);
-    setReviewAction('ACCEPT');
-    setReviewComment('');
-    setReviewRating('');
-    setRejectionReason('');
-  };
-
-  const handleReviewSubmit = async () => {
-    if (!reviewDraft) return;
-    setReviewLoading(true);
-    const payload = { action: reviewAction };
-    if (reviewComment) payload.comment = reviewComment;
-    if (reviewRating) payload.rating = parseInt(reviewRating, 10);
-    if (reviewAction === 'REJECT' && rejectionReason) {
-      payload.rejection_reason = rejectionReason;
-    }
-    try {
-      await aiService.reviewDraft(reviewDraft.id, payload);
-      setReviewDraft(null);
-      // Refresh expanded generation
-      if (expandedGen) {
-        const data = await aiService.getGeneration(expandedGen.generation_id);
-        setExpandedGen(data.data);
-      }
-    } catch (err) {
-      alert(err.response?.data?.message || 'Review failed');
-    } finally {
-      setReviewLoading(false);
-    }
+  const handleReviewed = (updated) => {
+    setReviewDraft(null);
+    setExpandedGen((gen) => gen && {
+      ...gen,
+      questions: gen.questions.map((q) => (q.id === updated.id ? updated : q)),
+    });
   };
 
   const statusColor = (status) => {
     if (status === 'SUCCESS') return 'bg-primary-container text-on-primary-container';
     if (status === 'REJECTED') return 'bg-error-container text-on-error-container';
     if (status === 'FAILED') return 'bg-error-container text-on-error-container';
-    return 'bg-surface-variant text-on-surface-variant';
-  };
-
-  const reviewStatusColor = (status) => {
-    if (status === 'VALIDATED') return 'bg-primary-container text-on-primary-container';
-    if (status === 'EDITED') return 'bg-secondary-container text-on-secondary-container';
-    if (status === 'REJECTED') return 'bg-error-container text-on-error-container';
     return 'bg-surface-variant text-on-surface-variant';
   };
 
@@ -197,10 +153,10 @@ export default function QuestionBank() {
           <p className="text-secondary mt-1 text-sm">Manage AI-generated question drafts and faculty reviews.</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => setShowGenModal(true)} className="bg-primary text-on-primary font-medium text-sm px-4 py-2 rounded-lg shadow-sm hover:bg-primary/90 transition-colors flex items-center gap-2">
+          {canGenerate && <button onClick={() => setShowGenModal(true)} className="bg-primary text-on-primary font-medium text-sm px-4 py-2 rounded-lg shadow-sm hover:bg-primary/90 transition-colors flex items-center gap-2">
             <span className="material-symbols-outlined text-[18px]">auto_awesome</span>
             Generate Questions
-          </button>
+          </button>}
         </div>
       </div>
 
@@ -231,18 +187,14 @@ export default function QuestionBank() {
         </div>
       </div>
 
-      {error && (
-        <div className="p-4 bg-error-container text-on-error-container rounded-lg text-sm">
-          {error}
-        </div>
-      )}
+      {failed && <LoadError what="generated questions" onRetry={fetchGenerations} />}
 
       {/* Generations List */}
       {loading ? (
         <div className="flex justify-center p-12">
           <span className="material-symbols-outlined animate-spin text-primary text-4xl">progress_activity</span>
         </div>
-      ) : generations.length === 0 ? (
+      ) : failed ? null : generations.length === 0 ? (
         <div className="text-center p-12 bg-surface-container-lowest border border-outline-variant rounded-xl text-secondary">
           No generations found. Generate questions using the button above.
         </div>
@@ -272,7 +224,7 @@ export default function QuestionBank() {
                     )}
                   </div>
                   <p className="text-sm font-medium text-on-surface">
-                    {g.question_count} question{g.question_count !== 1 ? 's' : ''} • {g.parameters?.question_type} • {g.parameters?.difficulty}
+                    {[`${g.question_count} question${g.question_count !== 1 ? 's' : ''}`, g.parameters?.topic, g.parameters?.question_type, g.parameters?.difficulty].filter(Boolean).join(' • ')}
                   </p>
                   <p className="text-xs text-secondary mt-0.5">
                     {new Date(g.created_at).toLocaleString()}
@@ -302,60 +254,8 @@ export default function QuestionBank() {
                           {expandedGen.metadata.context_available && <span>Context: {expandedGen.metadata.context_sections_used} sections</span>}
                         </div>
                       )}
-                      {/* Question Drafts */}
-                      {expandedGen.questions?.map((q, idx) => (
-                        <div key={q.id} className="bg-surface-container-lowest border border-outline-variant rounded-lg p-4">
-                          <div className="flex items-start gap-3">
-                            <span className="text-sm font-bold text-secondary mt-0.5">Q{q.position}.</span>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm text-on-surface mb-2">{q.question_text}</p>
-                              {/* Options for MCQ/TRUE_FALSE */}
-                              {q.options && q.options.length > 0 && (
-                                <div className="mb-2 flex flex-col gap-1">
-                                  {q.options.map((opt, oi) => (
-                                    <div key={oi} className={`text-xs px-2 py-1 rounded ${oi === q.correct_option_index ? 'bg-primary-container text-on-primary-container font-semibold' : 'bg-surface-container text-on-surface-variant'}`}>
-                                      {String.fromCharCode(65 + oi)}. {opt} {oi === q.correct_option_index && '✓'}
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-                              {/* Expected answer for non-MCQ */}
-                              {q.expected_answer && (
-                                <div className="mb-2 text-xs text-secondary bg-surface-container rounded p-2">
-                                  <span className="font-semibold">Expected Answer: </span>{q.expected_answer}
-                                </div>
-                              )}
-                              {q.explanation && (
-                                <div className="mb-2 text-xs text-secondary bg-surface-container rounded p-2">
-                                  <span className="font-semibold">Explanation: </span>{q.explanation}
-                                </div>
-                              )}
-                              <div className="flex flex-wrap items-center gap-2">
-                                <span className={`px-2 py-0.5 rounded text-[10px] font-medium ${q.difficulty === 'HARD' ? 'bg-error-container text-on-error-container' : q.difficulty === 'EASY' ? 'bg-surface-variant text-on-surface-variant' : 'bg-secondary-container text-on-secondary-container'}`}>
-                                  {q.difficulty}
-                                </span>
-                                <span className="px-2 py-0.5 rounded bg-surface-container text-on-surface-variant text-[10px] font-medium">
-                                  {q.bloom_level}
-                                </span>
-                                <span className="px-2 py-0.5 rounded bg-surface-container text-on-surface-variant text-[10px] font-medium">
-                                  {q.marks} marks
-                                </span>
-                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${reviewStatusColor(q.faculty_review_status)}`}>
-                                  {q.faculty_review_status}
-                                </span>
-                                {q.faculty_review_status === 'DRAFT' && (
-                                  <button
-                                    onClick={() => openReview(q)}
-                                    className="ml-auto text-primary text-xs font-semibold hover:underline flex items-center gap-1"
-                                  >
-                                    <span className="material-symbols-outlined text-[14px]">rate_review</span>
-                                    Review
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
+                      {expandedGen.questions?.map((q) => (
+                        <DraftCard key={q.id} draft={q} onReview={setReviewDraft} />
                       ))}
                     </div>
                   )}
@@ -377,12 +277,6 @@ export default function QuestionBank() {
               </h3>
               <button onClick={() => setShowGenModal(false)} className="text-secondary hover:text-on-surface"><span className="material-symbols-outlined">close</span></button>
             </div>
-
-            {genError && (
-              <div className="mb-4 p-3 bg-error-container text-on-error-container rounded text-sm">
-                {genError}
-              </div>
-            )}
 
             <form onSubmit={handleGenerate} className="flex flex-col gap-4">
               <div className="flex flex-col gap-1">
@@ -466,67 +360,7 @@ export default function QuestionBank() {
 
       {/* Review Modal */}
       {reviewDraft && (
-        <Modal onClose={() => setReviewDraft(null)}>
-          <div className="bg-surface-container-lowest rounded-xl shadow-lg p-6 min-w-[90vw] md:min-w-[28rem] max-w-md" onClick={e => e.stopPropagation()}>
-            <h3 className="text-lg font-bold text-on-surface mb-4">Review Draft</h3>
-            <p className="text-sm text-on-surface mb-4 line-clamp-3">{reviewDraft.question_text}</p>
-
-            <div className="flex flex-col gap-3">
-              <div className="flex flex-col gap-1">
-                <label className="text-xs font-semibold text-secondary">Action</label>
-                <select value={reviewAction} onChange={e => setReviewAction(e.target.value)} className="h-[40px] bg-surface-container border border-outline-variant rounded-lg px-3 outline-none text-sm">
-                  <option value="ACCEPT">Accept (Validate)</option>
-                  <option value="REJECT">Reject</option>
-                </select>
-              </div>
-
-              {reviewAction === 'REJECT' && (
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs font-semibold text-secondary">Rejection Reason *</label>
-                  <select required value={rejectionReason} onChange={e => setRejectionReason(e.target.value)} className="h-[40px] bg-surface-container border border-outline-variant rounded-lg px-3 outline-none text-sm">
-                    <option value="">Select reason</option>
-                    <option value="INCORRECT">Incorrect</option>
-                    <option value="AMBIGUOUS">Ambiguous</option>
-                    <option value="OFF_TOPIC">Off Topic</option>
-                    <option value="WRONG_DIFFICULTY">Wrong Difficulty</option>
-                    <option value="WRONG_BLOOM_LEVEL">Wrong Bloom Level</option>
-                    <option value="DUPLICATE">Duplicate</option>
-                    <option value="POOR_LANGUAGE">Poor Language</option>
-                    <option value="OTHER">Other</option>
-                  </select>
-                </div>
-              )}
-
-              <div className="flex flex-col gap-1">
-                <label className="text-xs font-semibold text-secondary">Comment (Optional)</label>
-                <textarea value={reviewComment} onChange={e => setReviewComment(e.target.value)} maxLength={1000} rows={2} className="bg-surface-container border border-outline-variant rounded-lg px-3 py-2 outline-none text-sm resize-none" placeholder="Optional feedback..." />
-              </div>
-
-              <div className="flex flex-col gap-1">
-                <label className="text-xs font-semibold text-secondary">Rating (1-5, Optional)</label>
-                <select value={reviewRating} onChange={e => setReviewRating(e.target.value)} className="h-[40px] bg-surface-container border border-outline-variant rounded-lg px-3 outline-none text-sm">
-                  <option value="">No rating</option>
-                  <option value="1">1 - Poor</option>
-                  <option value="2">2 - Below Average</option>
-                  <option value="3">3 - Average</option>
-                  <option value="4">4 - Good</option>
-                  <option value="5">5 - Excellent</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-2 mt-4">
-              <button onClick={() => setReviewDraft(null)} className="px-4 py-2 text-sm text-secondary border border-outline-variant rounded-lg hover:bg-surface-container-low transition-colors">Cancel</button>
-              <button
-                onClick={handleReviewSubmit}
-                disabled={reviewLoading || (reviewAction === 'REJECT' && !rejectionReason)}
-                className="px-4 py-2 text-sm bg-primary text-on-primary rounded-lg font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
-              >
-                {reviewLoading ? 'Submitting...' : 'Submit Review'}
-              </button>
-            </div>
-          </div>
-        </Modal>
+        <DraftReviewDialog draft={reviewDraft} onClose={() => setReviewDraft(null)} onReviewed={handleReviewed} />
       )}
     </div>
   );

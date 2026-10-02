@@ -1,29 +1,37 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { apiClient } from '../api/client';
+import { subjectService } from '../api/subjects';
+import { analyticsApi, papersApi } from '../api/platform';
+import { notifyError } from '../api/errors';
+import { PERMISSIONS } from '../api/session';
+import { useSession } from '../components/Session';
 
 export default function FacultyDashboard() {
-  const [subjects, setSubjects] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { user, can } = useSession();
+  const [subjects, setSubjects] = useState(null);
+  const [papers, setPapers] = useState(null);
+  const [kpis, setKpis] = useState(null);
+  const canViewAnalytics = can(PERMISSIONS.ANALYTICS_VIEW);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const subjectsRes = await apiClient.get('/subjects');
-        setSubjects(subjectsRes.data.data || []);
-      } catch (err) {
-        console.error("Failed to fetch data", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
+    subjectService.getSubjects().then(setSubjects).catch((err) => { setSubjects([]); notifyError(err, 'Failed to load subjects.'); });
+    papersApi.list({ page_size: 1 }).then(setPapers).catch((err) => notifyError(err, 'Failed to load paper statistics.'));
   }, []);
 
-  const mySubjects = subjects.length;
-  const generatedPapers = 0;
-  const pendingReviews = 0;
-  const totalStudents = 0;
+  useEffect(() => {
+    // Draft-review counts come from analytics, which the permission matrix may withhold
+    if (!canViewAnalytics) return;
+    analyticsApi.facultyOverview().then((data) => setKpis(data.kpis)).catch((err) => notifyError(err, 'Failed to load question statistics.'));
+  }, [canViewAnalytics]);
+
+  // Subjects assigned to this faculty member (falls back to all while the profile loads)
+  const assigned = (subjects || []).filter((s) => user && s.faculty_id === user.id);
+  const shownSubjects = user ? assigned : subjects || [];
+  const show = (value) => (value == null ? '—' : value);
+  const totalPapers = papers?.total;
+  const approvedPapers = papers?.status_counts?.APPROVED;
+  const changesRequested = papers?.status_counts?.CHANGES_REQUESTED || 0;
+  const pendingReviews = kpis?.questions_pending_review;
 
   return (
     <div className="w-full flex flex-col gap-6">
@@ -33,9 +41,11 @@ export default function FacultyDashboard() {
         <div className="absolute right-16 -bottom-16 w-36 h-36 bg-tertiary rounded-full opacity-20 blur-3xl"></div>
         <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h2 className="text-2xl md:text-3xl font-bold mb-2">Welcome back, Professor</h2>
+            <h2 className="text-2xl md:text-3xl font-bold mb-2">Welcome back{user?.full_name ? `, ${user.full_name}` : ''}</h2>
             <p className="text-sm opacity-80">
-              You have {pendingReviews} papers awaiting review. Your question bank is up to date.
+              {pendingReviews ? `You have ${pendingReviews} AI question draft${pendingReviews === 1 ? '' : 's'} awaiting your review. ` : ''}
+              {changesRequested ? `${changesRequested} paper${changesRequested === 1 ? ' was' : 's were'} returned for changes.` : ''}
+              {!pendingReviews && !changesRequested && 'Your question bank and papers are up to date.'}
             </p>
           </div>
           <div className="flex gap-2">
@@ -55,8 +65,8 @@ export default function FacultyDashboard() {
               <span className="material-symbols-outlined text-[16px]">collections_bookmark</span>
             </div>
           </div>
-          <div className="text-2xl font-bold text-on-surface">{mySubjects}</div>
-          <div className="text-[12px] text-on-surface-variant">Current Semester</div>
+          <div className="text-2xl font-bold text-on-surface">{subjects ? shownSubjects.length : '—'}</div>
+          <div className="text-[12px] text-on-surface-variant">Assigned to you</div>
         </div>
 
         <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 flex flex-col gap-2 hover:shadow-sm transition-shadow">
@@ -66,19 +76,19 @@ export default function FacultyDashboard() {
               <span className="material-symbols-outlined text-[16px]">description</span>
             </div>
           </div>
-          <div className="text-2xl font-bold text-on-surface">{generatedPapers}</div>
+          <div className="text-2xl font-bold text-on-surface">{show(totalPapers)}</div>
           <div className="text-[12px] text-on-surface-variant">Total papers</div>
         </div>
 
         <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 flex flex-col gap-2 hover:shadow-sm transition-shadow">
           <div className="flex justify-between items-start">
-            <span className="text-[11px] text-secondary uppercase tracking-wider font-semibold">Papers Generated</span>
+            <span className="text-[11px] text-secondary uppercase tracking-wider font-semibold">Approved Papers</span>
             <div className="w-8 h-8 rounded-full bg-tertiary-fixed flex items-center justify-center text-tertiary shrink-0">
               <span className="material-symbols-outlined text-[16px]">article</span>
             </div>
           </div>
-          <div className="text-2xl font-bold text-on-surface">{generatedPapers}</div>
-          <div className="text-[12px] text-on-surface-variant">YTD Total</div>
+          <div className="text-2xl font-bold text-on-surface">{show(approvedPapers)}</div>
+          <div className="text-[12px] text-on-surface-variant">Approved by HOD</div>
         </div>
 
         <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 flex flex-col gap-2 hover:shadow-sm transition-shadow relative overflow-hidden">
@@ -89,8 +99,8 @@ export default function FacultyDashboard() {
               <span className="material-symbols-outlined text-[16px] text-error">pending_actions</span>
             </div>
           </div>
-          <div className="text-2xl font-bold text-on-surface pl-2">{pendingReviews}</div>
-          <div className="text-[12px] text-tertiary-container font-semibold pl-2">Action Required</div>
+          <div className="text-2xl font-bold text-on-surface pl-2">{canViewAnalytics === false ? '—' : show(pendingReviews)}</div>
+          <div className="text-[12px] text-tertiary-container font-semibold pl-2">{pendingReviews ? 'AI drafts to review' : 'Nothing waiting'}</div>
         </div>
       </section>
 
@@ -102,15 +112,17 @@ export default function FacultyDashboard() {
             <h2 className="text-[15px] font-semibold text-on-surface">My Subjects</h2>
             <Link to="/dashboard/subjects" className="text-primary text-[12px] font-medium hover:underline">View All</Link>
           </div>
-          {subjects.length === 0 ? (
+          {subjects === null ? (
+            <p className="text-[13px] text-secondary p-3">Loading subjects...</p>
+          ) : shownSubjects.length === 0 ? (
             <div className="flex-1 flex flex-col items-center justify-center gap-3 p-8 bg-surface-container/50 rounded-lg min-h-[200px]">
               <span className="material-symbols-outlined text-[48px] text-outline">auto_stories</span>
-              <p className="text-[13px] text-on-surface-variant text-center">No subjects assigned yet.</p>
+              <p className="text-[13px] text-on-surface-variant text-center">No subjects assigned yet. Ask your HOD to assign you to a subject.</p>
             </div>
           ) : (
             <div className="flex flex-col gap-2">
-              {subjects.slice(0, 5).map((subject) => (
-                <div key={subject.id} className="flex items-center gap-3 p-3 bg-surface-container/50 rounded-lg hover:bg-surface-container transition-colors">
+              {shownSubjects.slice(0, 5).map((subject) => (
+                <Link to="/dashboard/subjects" key={subject.id} className="flex items-center gap-3 p-3 bg-surface-container/50 rounded-lg hover:bg-surface-container transition-colors">
                   <div className="w-9 h-9 rounded-lg bg-primary-container/20 flex items-center justify-center shrink-0">
                     <span className="material-symbols-outlined text-[18px] text-primary">auto_stories</span>
                   </div>
@@ -119,7 +131,7 @@ export default function FacultyDashboard() {
                     <p className="text-[11px] text-on-surface-variant">{subject.code || 'No code'}</p>
                   </div>
                   <span className="material-symbols-outlined text-[18px] text-outline">chevron_right</span>
-                </div>
+                </Link>
               ))}
             </div>
           )}

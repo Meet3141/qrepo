@@ -1,6 +1,7 @@
 import React from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import { cn } from '../utils/cn';
+import { useSession } from './Session';
 
 const getNavItems = (role) => {
   const r = (role || 'Student').toLowerCase();
@@ -13,7 +14,7 @@ const getNavItems = (role) => {
       { icon: 'auto_stories', label: 'Subjects', to: '/dashboard/subjects' },
       { icon: 'description', label: 'Documents', to: '/dashboard/documents' },
       { icon: 'quiz', label: 'Question Bank', to: '/question-bank' },
-      { icon: 'list_alt', label: 'System Logs', to: '/settings/ai' },
+      { icon: 'list_alt', label: 'System Logs', to: '/admin/logs' },
       { icon: 'psychology', label: 'AI Configuration', to: '/settings/ai' },
     ];
   }
@@ -47,15 +48,8 @@ const getNavItems = (role) => {
 };
 
 export default function Sidebar({ isOpen, onClose }) {
-  const role = localStorage.getItem('user_role') || 'Student';
+  const { role, logout } = useSession();
   const navItems = getNavItems(role);
-  const navigate = useNavigate();
-
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user_role');
-    navigate('/login');
-  };
 
   return (
     <aside
@@ -124,7 +118,7 @@ export default function Sidebar({ isOpen, onClose }) {
           <span>Settings</span>
         </NavLink>
         <button
-          onClick={handleLogout}
+          onClick={logout}
           className="flex items-center gap-3 mx-1 px-4 py-2.5 text-on-surface-variant hover:bg-error-container/30 hover:text-error rounded-lg text-[13px] transition-colors text-left"
         >
           <span className="material-symbols-outlined text-[20px]">logout</span>

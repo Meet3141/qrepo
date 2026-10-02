@@ -1,147 +1,156 @@
-import React, { useState, useEffect } from 'react';
-import { apiClient } from '../api/client';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { analyticsApi } from '../api/platform';
+import { notifyError } from '../api/errors';
+import ActivityList from '../components/ActivityList';
+import { LoadError, formatBytes } from '../components/ui';
+
+function Kpi({ label, icon, iconClass, value, children }) {
+  return (
+    <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 flex flex-col gap-2 hover:shadow-sm transition-shadow min-w-0">
+      <div className="flex justify-between items-start gap-2">
+        <span className="text-[11px] text-on-surface-variant uppercase tracking-wider font-semibold truncate">{label}</span>
+        <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${iconClass}`}>
+          <span className="material-symbols-outlined text-[16px]">{icon}</span>
+        </div>
+      </div>
+      <div className="text-2xl font-semibold text-on-surface mt-1">{value}</div>
+      {children}
+    </div>
+  );
+}
+
+function AiChart({ trend }) {
+  const max = Math.max(1, ...trend.map((d) => d.success + d.failed));
+  const any = trend.some((d) => d.success + d.failed > 0);
+  if (!any) {
+    return (
+      <div className="flex-1 bg-surface-container rounded-lg border border-outline-variant/50 flex flex-col items-center justify-center gap-3 p-6">
+        <span className="material-symbols-outlined text-[48px] text-outline">monitoring</span>
+        <p className="text-[13px] text-on-surface-variant text-center">No AI generations in the last 14 days.</p>
+      </div>
+    );
+  }
+  return (
+    <div className="flex-1 flex flex-col justify-center">
+      <div className="flex items-end gap-1.5 min-h-[220px]">
+        {trend.map((d) => {
+          const total = d.success + d.failed;
+          return (
+            <div key={d.date} className="flex-1 flex flex-col items-center gap-1"
+                 title={`${d.date}: ${d.success} succeeded, ${d.failed} failed${d.avg_latency_ms ? `, avg ${(d.avg_latency_ms / 1000).toFixed(1)}s` : ''}`}>
+              <div className="w-full flex flex-col justify-end h-[200px]">
+                <div className="w-full bg-error/70 rounded-t" style={{ height: `${(100 * d.failed) / max}%` }} />
+                <div className={`w-full bg-primary ${d.failed ? '' : 'rounded-t'}`} style={{ height: `${(100 * d.success) / max}%` }} />
+              </div>
+              <span className="text-[9px] text-outline">{total || ''}</span>
+            </div>
+          );
+        })}
+      </div>
+      <div className="flex justify-between text-[10px] text-outline mt-1">
+        <span>{trend[0].date}</span><span>{trend[trend.length - 1].date}</span>
+      </div>
+      <div className="flex gap-4 text-xs text-secondary mt-3">
+        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-primary" />Succeeded</span>
+        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-error/70" />Failed / rejected</span>
+      </div>
+    </div>
+  );
+}
 
 export default function AdminDashboard() {
-  const [subjects, setSubjects] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [overview, setOverview] = useState(null);
+  const [activity, setActivity] = useState([]);
+  const [failed, setFailed] = useState(false);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const subjectsRes = await apiClient.get('/subjects');
-        setSubjects(subjectsRes.data.data || []);
-      } catch (err) {
-        console.error("Failed to fetch dashboard data", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
+  const load = useCallback(async () => {
+    setFailed(false);
+    try {
+      const [o, a] = await Promise.all([analyticsApi.adminOverview(), analyticsApi.adminActivity(6)]);
+      setOverview(o);
+      setActivity(a);
+    } catch (err) {
+      setFailed(true);
+      notifyError(err, 'Failed to load dashboard data.');
+    }
   }, []);
 
-  const subjectCount = subjects.length || '—';
+  useEffect(() => { load(); }, [load]);
+
+  const o = overview;
+  const quota = o?.documents.storage_quota_bytes;
+  const usedPct = o?.documents.storage_used_ratio != null ? Math.round(o.documents.storage_used_ratio * 100) : null;
 
   return (
     <div className="w-full flex flex-col gap-6">
-      {/* KPIs Bento Grid */}
+      {failed && <LoadError what="the dashboard" onRetry={load} />}
+
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-        {/* KPI 1: Total Users */}
-        <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 flex flex-col gap-2 hover:shadow-sm transition-shadow min-w-0">
-          <div className="flex justify-between items-start gap-2">
-            <span className="text-[11px] text-on-surface-variant uppercase tracking-wider font-semibold truncate">Total Users</span>
-            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
-              <span className="material-symbols-outlined text-[16px]">group</span>
+        <Kpi label="Total Users" icon="group" iconClass="bg-primary/10 text-primary" value={o ? o.users.total.toLocaleString() : '—'}>
+          {o && (
+            <div className="flex items-center gap-1 text-primary text-[11px] font-medium">
+              <span className="material-symbols-outlined text-[14px]">trending_up</span>
+              <span>+{o.users.new_last_7_days} this week · {o.users.active} active</span>
             </div>
-          </div>
-          <div className="text-2xl font-semibold text-on-surface mt-1">1,248</div>
-          <div className="flex items-center gap-1 text-primary text-[11px] font-medium">
-            <span className="material-symbols-outlined text-[14px]">trending_up</span>
-            <span>+4% this week</span>
-          </div>
-        </div>
-
-        {/* KPI 2: Departments */}
-        <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 flex flex-col gap-2 hover:shadow-sm transition-shadow min-w-0">
-          <div className="flex justify-between items-start gap-2">
-            <span className="text-[11px] text-on-surface-variant uppercase tracking-wider font-semibold truncate">Departments</span>
-            <div className="w-8 h-8 rounded-full bg-secondary/10 flex items-center justify-center text-secondary shrink-0">
-              <span className="material-symbols-outlined text-[16px]">domain</span>
+          )}
+        </Kpi>
+        <Kpi label="Departments" icon="domain" iconClass="bg-secondary/10 text-secondary" value={o ? o.departments : '—'}>
+          <div className="text-[12px] text-on-surface-variant truncate">Academic departments</div>
+        </Kpi>
+        <Kpi label="Subjects" icon="book" iconClass="bg-secondary/10 text-secondary" value={o ? o.subjects : '—'}>
+          <div className="text-[12px] text-on-surface-variant truncate">{o ? `${o.units} units` : ''}</div>
+        </Kpi>
+        <Kpi label="AI Generations (24h)" icon="psychology" iconClass="bg-tertiary/10 text-tertiary" value={o ? o.ai.generations_last_24h : '—'}>
+          {o && (
+            <div className="text-[11px] text-on-surface-variant truncate">
+              {o.ai.failed_last_24h ? `${o.ai.failed_last_24h} failed · ` : ''}
+              {o.ai.avg_latency_ms_last_7_days ? `avg ${(o.ai.avg_latency_ms_last_7_days / 1000).toFixed(1)}s (7d)` : 'no runs this week'}
             </div>
-          </div>
-          <div className="text-2xl font-semibold text-on-surface mt-1">48</div>
-          <div className="text-[12px] text-on-surface-variant truncate">Across 3 campuses</div>
-        </div>
-
-        {/* KPI 3: Subjects */}
-        <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 flex flex-col gap-2 hover:shadow-sm transition-shadow min-w-0">
+          )}
+        </Kpi>
+        <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 flex flex-col justify-between hover:shadow-sm transition-shadow sm:col-span-2 lg:col-span-1 min-w-0">
           <div className="flex justify-between items-start gap-2">
-            <span className="text-[11px] text-on-surface-variant uppercase tracking-wider font-semibold truncate">Subjects</span>
-            <div className="w-8 h-8 rounded-full bg-secondary/10 flex items-center justify-center text-secondary shrink-0">
-              <span className="material-symbols-outlined text-[16px]">book</span>
-            </div>
-          </div>
-          <div className="text-2xl font-semibold text-on-surface mt-1">{subjectCount}</div>
-          <div className="text-[12px] text-on-surface-variant truncate">Active curriculum items</div>
-        </div>
-
-        {/* KPI 4: Active AI Jobs */}
-        <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 flex flex-col gap-2 hover:shadow-sm transition-shadow min-w-0">
-          <div className="flex justify-between items-start gap-2">
-            <span className="text-[11px] text-on-surface-variant uppercase tracking-wider font-semibold truncate">Active AI Jobs</span>
-            <div className="w-8 h-8 rounded-full bg-tertiary/10 flex items-center justify-center text-tertiary shrink-0">
-              <span className="material-symbols-outlined text-[16px]">psychology</span>
-            </div>
-          </div>
-          <div className="text-2xl font-semibold text-on-surface mt-1">12</div>
-          <div className="flex items-center gap-1.5 text-tertiary text-[11px] font-medium">
-            <span className="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse shrink-0"></span>
-            <span className="truncate">Processing</span>
-          </div>
-        </div>
-
-        {/* KPI 5: Storage */}
-        <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 flex flex-col justify-between hover:shadow-sm transition-shadow sm:col-span-2 lg:col-span-1 xl:col-span-1 min-w-0">
-          <div className="flex justify-between items-start gap-2">
-            <span className="text-[11px] text-on-surface-variant uppercase tracking-wider font-semibold truncate">Storage Usage</span>
+            <span className="text-[11px] text-on-surface-variant uppercase tracking-wider font-semibold truncate">Document Storage</span>
             <div className="w-8 h-8 rounded-full bg-surface-variant flex items-center justify-center text-on-surface-variant shrink-0">
               <span className="material-symbols-outlined text-[16px]">cloud</span>
             </div>
           </div>
           <div className="mt-3">
             <div className="flex justify-between items-end mb-2 gap-2">
-              <span className="text-lg font-semibold text-on-surface shrink-0">78%</span>
-              <span className="text-[11px] text-on-surface-variant truncate">3.9TB / 5.0TB</span>
+              <span className="text-lg font-semibold text-on-surface shrink-0">{o ? formatBytes(o.documents.storage_bytes) : '—'}</span>
+              <span className="text-[11px] text-on-surface-variant truncate">
+                {o ? (quota ? `${usedPct}% of ${formatBytes(quota)}` : `${o.documents.total} documents`) : ''}
+              </span>
             </div>
-            <div className="w-full bg-surface-variant rounded-full h-1.5 overflow-hidden">
-              <div className="bg-primary h-1.5 rounded-full transition-all" style={{ width: '78%' }}></div>
-            </div>
+            {quota && (
+              <div className="w-full bg-surface-variant rounded-full h-1.5 overflow-hidden">
+                <div className={`h-1.5 rounded-full ${usedPct >= 90 ? 'bg-error' : 'bg-primary'}`} style={{ width: `${Math.min(100, usedPct)}%` }} />
+              </div>
+            )}
           </div>
         </div>
       </section>
 
-      {/* Main Content: Chart + Logs */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1">
-        {/* Chart Area */}
-        <div className="lg:col-span-2 flex flex-col gap-6">
-          <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 flex-1 min-h-[350px] flex flex-col">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-[15px] font-semibold text-on-surface">AI Infrastructure Performance</h2>
-              <button className="text-on-surface-variant hover:bg-surface-container-high p-1.5 rounded-lg transition-colors">
-                <span className="material-symbols-outlined text-[20px]">more_vert</span>
-              </button>
-            </div>
-            <div className="flex-1 bg-surface-container rounded-lg border border-outline-variant/50 flex flex-col items-center justify-center gap-3 p-6">
-              <span className="material-symbols-outlined text-[48px] text-outline">monitoring</span>
-              <p className="text-[13px] text-on-surface-variant text-center">Performance metrics will appear here once AI jobs have been processed.</p>
-            </div>
+        <div className="lg:col-span-2 bg-surface-container-lowest border border-outline-variant rounded-xl p-4 min-h-[350px] flex flex-col">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-[15px] font-semibold text-on-surface">AI Generation Activity (14 days)</h2>
+            {o?.ai.success_rate_last_7_days != null && (
+              <span className="text-[12px] text-secondary">{Math.round(o.ai.success_rate_last_7_days * 100)}% success (7d) · {o.ai.questions_generated_total} questions total</span>
+            )}
           </div>
+          {o ? <AiChart trend={o.ai.trend} /> : !failed && <p className="text-sm text-secondary">Loading...</p>}
         </div>
 
-        {/* Right Panel: Logs */}
-        <div className="flex flex-col gap-6">
-          <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 flex-1 min-h-[350px] flex flex-col">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-[15px] font-semibold text-on-surface">Recent System Logs</h2>
-              <button className="text-primary text-[12px] font-medium hover:underline">View All</button>
-            </div>
-            <div className="flex-1 flex flex-col gap-3 overflow-y-auto">
-              {/* Log entries */}
-              {[
-                { icon: 'person_add', text: 'New user registered: faculty@qrepo.edu', time: '2 min ago', color: 'text-primary' },
-                { icon: 'security', text: 'Role changed: HOD → Admin for user #42', time: '15 min ago', color: 'text-secondary' },
-                { icon: 'psychology', text: 'AI job completed: Bloom\'s analysis #128', time: '1 hr ago', color: 'text-tertiary' },
-                { icon: 'warning', text: 'Storage threshold warning at 78%', time: '3 hrs ago', color: 'text-error' },
-                { icon: 'cloud_upload', text: 'Bulk document upload: 24 files processed', time: '5 hrs ago', color: 'text-on-surface-variant' },
-              ].map((log, i) => (
-                <div key={i} className="flex items-start gap-3 p-3 bg-surface-container/50 rounded-lg hover:bg-surface-container transition-colors">
-                  <span className={`material-symbols-outlined text-[18px] mt-0.5 shrink-0 ${log.color}`}>{log.icon}</span>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[12px] text-on-surface leading-snug">{log.text}</p>
-                    <span className="text-[10px] text-outline mt-1 block">{log.time}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
+        <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 min-h-[350px] flex flex-col">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-[15px] font-semibold text-on-surface">Recent Activity</h2>
+            <Link to="/admin/logs" className="text-primary text-[12px] font-medium hover:underline">View All</Link>
+          </div>
+          <div className="flex-1 flex flex-col gap-3 overflow-y-auto max-h-[520px]">
+            {overview && activity.length === 0 && <p className="text-[13px] text-on-surface-variant">No activity yet.</p>}
+            <ActivityList events={activity} />
           </div>
         </div>
       </div>

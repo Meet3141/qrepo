@@ -1,25 +1,20 @@
 import { apiClient } from './client';
+import { clearSession, saveRole, saveSession } from './session';
 
 export const authService = {
-  login: async (email, password) => {
-    const payload = { email, password };
-    const response = await apiClient.post('/auth/login', payload);
-    
-    // Store token
-    if (response.data && response.data.data && response.data.data.access_token) {
-      localStorage.setItem('token', response.data.data.access_token);
-    }
-    
-    return response.data;
+  /** Signs in and stores the token; returns the current user profile. */
+  login: async (email, password, remember = true) => {
+    const response = await apiClient.post('/auth/login', { email, password });
+    saveSession(response.data.data.access_token, remember);
+    const user = await authService.getCurrentUser();
+    saveRole(user.role?.name || '');
+    return user;
   },
-  
-  logout: () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user_role');
-  },
-  
+
+  logout: () => clearSession(),
+
   getCurrentUser: async () => {
     const response = await apiClient.get('/auth/me');
     return response.data.data;
-  }
+  },
 };

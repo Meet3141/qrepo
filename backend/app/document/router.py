@@ -3,6 +3,8 @@ from typing import List
 from fastapi import APIRouter, Depends, status, UploadFile, File
 from app.auth.constants import ROLE_ADMIN, ROLE_HOD, ROLE_FACULTY, ROLE_STUDENT
 from app.api.dependencies import get_current_active_user, RequireRole
+from app.permissions.catalog import DOCUMENTS_DELETE, DOCUMENTS_UPLOAD
+from app.permissions.dependencies import RequirePermission
 from app.auth.models import User
 from app.document.schemas import DocumentResponse, DocumentUpdate
 from app.document.service import DocumentService
@@ -27,7 +29,7 @@ document_router = APIRouter()
 async def upload_document(
     unit_id: uuid.UUID,
     file: UploadFile = File(...),
-    current_user: User = Depends(RequireRole([ROLE_ADMIN, ROLE_HOD, ROLE_FACULTY])),
+    current_user: User = Depends(RequirePermission(DOCUMENTS_UPLOAD)),
     service: DocumentService = Depends(get_document_service),
     storage: DocumentStorage = Depends(get_document_storage)
 ):
@@ -116,7 +118,7 @@ def update_document(
 )
 def delete_document(
     document_id: uuid.UUID,
-    current_user: User = Depends(RequireRole([ROLE_ADMIN, ROLE_HOD, ROLE_FACULTY])),
+    current_user: User = Depends(RequirePermission(DOCUMENTS_DELETE)),
     service: DocumentService = Depends(get_document_service),
     storage: DocumentStorage = Depends(get_document_storage)
 ):

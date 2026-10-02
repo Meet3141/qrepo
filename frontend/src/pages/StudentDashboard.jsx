@@ -1,28 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { apiClient } from '../api/client';
+import { subjectService } from '../api/subjects';
+import { notifyError } from '../api/errors';
+import { useSession } from '../components/Session';
 
 export default function StudentDashboard() {
-  const [subjects, setSubjects] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { user } = useSession();
+  const [subjects, setSubjects] = useState(null);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const subjectsRes = await apiClient.get('/subjects');
-        setSubjects(subjectsRes.data.data || []);
-      } catch (err) {
-        console.error("Failed to fetch dashboard data", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
+    subjectService.getSubjects().then(setSubjects).catch((err) => { setSubjects([]); notifyError(err, 'Failed to load subjects.'); });
   }, []);
 
-  const enrolledSubjects = subjects.length;
-  const upcomingExams = 0;
-  const completedAssessments = 0;
+  // QRepo has no enrolment, exam-schedule or results data yet, so those cards say so instead of showing 0
+  const enrolledSubjects = subjects ? subjects.length : '—';
 
   return (
     <div className="w-full flex flex-col gap-6">
@@ -31,8 +22,8 @@ export default function StudentDashboard() {
         <div className="absolute -right-16 -top-16 w-48 h-48 bg-primary-container rounded-full opacity-30 blur-2xl"></div>
         <div className="absolute right-16 -bottom-16 w-36 h-36 bg-tertiary rounded-full opacity-20 blur-3xl"></div>
         <div className="relative z-10">
-          <h2 className="text-2xl md:text-3xl font-bold mb-2">Welcome back, Student</h2>
-          <p className="text-sm opacity-80">Track your subjects, assessments, and performance analytics all in one place.</p>
+          <h2 className="text-2xl md:text-3xl font-bold mb-2">Welcome back{user?.full_name ? `, ${user.full_name}` : ''}</h2>
+          <p className="text-sm opacity-80">Browse the subjects and units available in QRepo.</p>
         </div>
       </div>
 
@@ -47,7 +38,7 @@ export default function StudentDashboard() {
             </div>
           </div>
           <div className="text-2xl font-semibold text-on-surface">{enrolledSubjects}</div>
-          <div className="text-[12px] text-on-surface-variant">Current semester</div>
+          <div className="text-[12px] text-on-surface-variant">Available subjects</div>
         </div>
 
         {/* Upcoming Exams */}
@@ -58,8 +49,8 @@ export default function StudentDashboard() {
               <span className="material-symbols-outlined text-[16px]">event</span>
             </div>
           </div>
-          <div className="text-2xl font-semibold text-on-surface">{upcomingExams}</div>
-          <div className="text-[12px] text-on-surface-variant">Scheduled this month</div>
+          <div className="text-2xl font-semibold text-on-surface">—</div>
+          <div className="text-[12px] text-on-surface-variant">Exam schedules aren't tracked yet</div>
         </div>
 
         {/* Completed Assessments */}
@@ -70,8 +61,8 @@ export default function StudentDashboard() {
               <span className="material-symbols-outlined text-[16px]">task_alt</span>
             </div>
           </div>
-          <div className="text-2xl font-semibold text-on-surface">{completedAssessments}</div>
-          <div className="text-[12px] text-on-surface-variant">Assessments completed</div>
+          <div className="text-2xl font-semibold text-on-surface">—</div>
+          <div className="text-[12px] text-on-surface-variant">Results aren't tracked yet</div>
         </div>
       </section>
 
@@ -83,15 +74,17 @@ export default function StudentDashboard() {
             <h2 className="text-[15px] font-semibold text-on-surface">My Subjects</h2>
             <Link to="/student/subjects" className="text-primary text-[12px] font-medium hover:underline">View All</Link>
           </div>
-          {subjects.length === 0 ? (
+          {subjects === null ? (
+            <p className="text-[13px] text-secondary p-3">Loading subjects...</p>
+          ) : subjects.length === 0 ? (
             <div className="flex-1 flex flex-col items-center justify-center gap-3 p-8 bg-surface-container/50 rounded-lg min-h-[200px]">
               <span className="material-symbols-outlined text-[48px] text-outline">school</span>
-              <p className="text-[13px] text-on-surface-variant text-center">No subjects enrolled yet. Contact your faculty for enrollment.</p>
+              <p className="text-[13px] text-on-surface-variant text-center">No subjects have been added yet.</p>
             </div>
           ) : (
             <div className="flex flex-col gap-2">
               {subjects.slice(0, 5).map((subject) => (
-                <div key={subject.id} className="flex items-center gap-3 p-3 bg-surface-container/50 rounded-lg hover:bg-surface-container transition-colors">
+                <Link to="/student/subjects" key={subject.id} className="flex items-center gap-3 p-3 bg-surface-container/50 rounded-lg hover:bg-surface-container transition-colors">
                   <div className="w-9 h-9 rounded-lg bg-primary-container/20 flex items-center justify-center shrink-0">
                     <span className="material-symbols-outlined text-[18px] text-primary">auto_stories</span>
                   </div>
@@ -100,7 +93,7 @@ export default function StudentDashboard() {
                     <p className="text-[11px] text-on-surface-variant truncate">{subject.code || 'No code'}</p>
                   </div>
                   <span className="material-symbols-outlined text-[18px] text-outline">chevron_right</span>
-                </div>
+                </Link>
               ))}
             </div>
           )}
@@ -109,20 +102,9 @@ export default function StudentDashboard() {
         {/* Activity Feed */}
         <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 flex flex-col">
           <h2 className="text-[15px] font-semibold text-on-surface mb-4">Recent Activity</h2>
-          <div className="flex-1 flex flex-col gap-3">
-            {[
-              { icon: 'description', text: 'New paper available: CS301 Mid-Term', time: '1 hr ago', color: 'text-primary' },
-              { icon: 'grading', text: 'Assessment graded: MA201 Quiz 3', time: '3 hrs ago', color: 'text-tertiary' },
-              { icon: 'notifications', text: 'Reminder: Submit CS201 assignment', time: '5 hrs ago', color: 'text-secondary' },
-            ].map((item, i) => (
-              <div key={i} className="flex items-start gap-3 p-3 bg-surface-container/50 rounded-lg">
-                <span className={`material-symbols-outlined text-[18px] mt-0.5 shrink-0 ${item.color}`}>{item.icon}</span>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[12px] text-on-surface leading-snug">{item.text}</p>
-                  <span className="text-[10px] text-outline mt-1 block">{item.time}</span>
-                </div>
-              </div>
-            ))}
+          <div className="flex-1 flex flex-col items-center justify-center gap-3 p-6 bg-surface-container/50 rounded-lg">
+            <span className="material-symbols-outlined text-[40px] text-outline">notifications_off</span>
+            <p className="text-[13px] text-on-surface-variant text-center">No recent activity. QRepo does not share papers or results with students yet.</p>
           </div>
         </div>
       </div>

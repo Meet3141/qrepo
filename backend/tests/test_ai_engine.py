@@ -267,7 +267,12 @@ class GeminiResponseHandlingTests(unittest.TestCase):
         result = provider.generate_questions(PROMPT)
         config = models.calls[0]["config"]
         self.assertEqual(config.response_mime_type, "application/json")
-        self.assertIs(config.response_schema, GeneratedQuestionBatch)
+        # Gemini rejects additionalProperties (live finding, commit 09f9e95), so the provider sends the
+        # model's JSON schema with it stripped; extra fields are still rejected when the output is parsed.
+        self.assertIn("additionalProperties", json.dumps(GeneratedQuestionBatch.model_json_schema()))
+        self.assertNotIn("additionalProperties", json.dumps(config.response_schema))
+        self.assertEqual(config.response_schema["title"], "GeneratedQuestionBatch")
+        self.assertEqual(config.response_schema["required"], ["questions"])
         self.assertEqual(config.system_instruction, SYSTEM_INSTRUCTION)
         self.assertEqual(config.temperature, 0.3)
         self.assertEqual(config.max_output_tokens, 4096)
