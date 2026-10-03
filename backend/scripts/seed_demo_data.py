@@ -295,6 +295,110 @@ def seed_demo_data():
             db.add(q)
     db.commit()
 
+    # 13. ANALYTICS & RECENT AI GENERATIONS DATA
+    print("Seeding Analytics Data...")
+    from app.ai.models import AIGeneration, QuestionDraft
+    from app.papers.models import Paper
+    from datetime import timedelta, timezone
+    
+    now = datetime.now(timezone.utc)
+    
+    for i in range(12):
+        # Scatter generations over the last 8 weeks
+        gen_date = now - timedelta(days=i * 4 + 2)
+        
+        gen = AIGeneration(
+            requested_by=faculty_cse1.id,
+            subject_id=subject_objs["CS301"].id,
+            unit_id=unit_objs["CS301"][0].id,
+            parameters_json={"topic": "Demo Topic", "mark_distribution": {"2": 5}},
+            prompt_version="v1",
+            provider="gemini",
+            model_name="gemini-1.5-pro",
+            status="SUCCESS",
+            validation_status="PASS",
+            question_count=5,
+            questions_returned=5,
+            quality_score=0.85 + (i % 5 * 0.02),
+            generation_attempts=1,
+            provider_calls=1,
+            latency_ms=1500,
+            context_available=False,
+            created_at=gen_date
+        )
+        db.add(gen)
+        db.commit()
+        db.refresh(gen)
+        
+        # Latest 3 generations are awaiting review (DRAFT)
+        if i < 3:
+            for j in range(5):
+                draft = QuestionDraft(
+                    generation_id=gen.id,
+                    subject_id=subject_objs["CS301"].id,
+                    unit_id=unit_objs["CS301"][0].id,
+                    position=j,
+                    question_text=f"Awaiting review question {j} for {gen_date.strftime('%Y-%m-%d')}",
+                    question_type="MCQ",
+                    topic="Demo Topic",
+                    difficulty="MEDIUM",
+                    bloom_level="APPLY",
+                    marks=2.0,
+                    options=["A", "B", "C", "D"],
+                    correct_option_index=0,
+                    validation_status="PASS",
+                    faculty_review_status="DRAFT",
+                    ai_original={"question_text": "Original text"},
+                    created_at=gen_date
+                )
+                db.add(draft)
+        else:
+            # Older ones are ACCEPTED, some REJECTED
+            bloom_levels = ["REMEMBER", "UNDERSTAND", "APPLY", "ANALYZE", "EVALUATE", "CREATE"]
+            for j in range(5):
+                status = "ACCEPTED" if j < 4 else "REJECTED"
+                bloom = bloom_levels[j % len(bloom_levels)]
+                draft = QuestionDraft(
+                    generation_id=gen.id,
+                    subject_id=subject_objs["CS301"].id,
+                    unit_id=unit_objs["CS301"][0].id,
+                    position=j,
+                    question_text=f"{status.capitalize()} question {j} for {gen_date.strftime('%Y-%m-%d')}",
+                    question_type="MCQ",
+                    topic="Demo Topic",
+                    difficulty="MEDIUM",
+                    bloom_level=bloom,
+                    marks=2.0,
+                    options=["A", "B", "C", "D"],
+                    correct_option_index=0,
+                    validation_status="PASS",
+                    faculty_review_status=status,
+                    ai_original={"question_text": "Original text"},
+                    created_at=gen_date,
+                    reviewed_at=gen_date + timedelta(days=1),
+                    reviewed_by=faculty_cse1.id
+                )
+                db.add(draft)
+    
+    db.commit()
+
+    # 14. PAPERS
+    print("Seeding Papers...")
+    for i in range(3):
+        status = "APPROVED" if i == 0 else "SUBMITTED" if i == 1 else "DRAFT"
+        paper = Paper(
+            title=f"Midterm Exam {i+1} (Demo)",
+            subject_id=subject_objs["CS301"].id,
+            created_by=faculty_cse1.id,
+            exam_type="Midterm",
+            duration_minutes=90,
+            blueprint={"units": [], "marks": 50},
+            status=status,
+            version=1
+        )
+        db.add(paper)
+    db.commit()
+
     db.close()
     print("--- Seed Complete ---")
 
