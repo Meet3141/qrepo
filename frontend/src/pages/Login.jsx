@@ -63,47 +63,47 @@ export default function Login() {
         </div>
         
         {/* Content */}
-        <div className="relative z-10 flex flex-col justify-center p-12 xl:p-20 max-w-3xl">
-          <div className="mb-12">
-            <h1 className="text-4xl font-bold text-primary tracking-tight mb-2">QRepo</h1>
-            <p className="text-lg font-semibold text-on-surface-variant">Enterprise Assessment Platform</p>
+        <div className="relative z-10 flex flex-col justify-center px-10 py-6 lg:px-12 xl:px-20 h-full max-w-3xl">
+          <div className="mb-6 xl:mb-10">
+            <h1 className="text-3xl xl:text-4xl font-bold text-primary tracking-tight mb-1 xl:mb-2">QRepo</h1>
+            <p className="text-base xl:text-lg font-semibold text-on-surface-variant">Enterprise Assessment Platform</p>
           </div>
           
-          <h2 className="text-5xl font-bold text-on-surface leading-tight mb-16 tracking-tight">
+          <h2 className="text-4xl xl:text-5xl font-bold text-on-surface leading-tight mb-8 xl:mb-12 tracking-tight">
             Welcome to smarter<br />academic management.
           </h2>
           
-          <div className="space-y-10">
+          <div className="space-y-6 xl:space-y-8">
             {/* Feature 1 */}
-            <div className="flex gap-5">
-              <div className="w-14 h-14 rounded-xl bg-primary text-on-primary flex items-center justify-center shrink-0 shadow-lg">
-                <span className="material-symbols-outlined text-[28px]" style={{ fontVariationSettings: "'FILL' 1" }}>library_books</span>
+            <div className="flex gap-4 xl:gap-5">
+              <div className="w-12 h-12 xl:w-14 xl:h-14 rounded-xl bg-primary text-on-primary flex items-center justify-center shrink-0 shadow-lg">
+                <span className="material-symbols-outlined text-[24px] xl:text-[28px]" style={{ fontVariationSettings: "'FILL' 1" }}>library_books</span>
               </div>
               <div>
-                <h3 className="text-[17px] font-bold text-on-surface mb-1.5">Centralized Resources</h3>
-                <p className="text-[15px] text-on-surface-variant leading-relaxed">Access your institution's complete library of subjects, documents, and question banks in one secure location.</p>
+                <h3 className="text-base xl:text-[17px] font-bold text-on-surface mb-1">Centralized Resources</h3>
+                <p className="text-sm xl:text-[15px] text-on-surface-variant leading-relaxed">Access your institution's complete library of subjects, documents, and question banks in one secure location.</p>
               </div>
             </div>
             
             {/* Feature 2 */}
-            <div className="flex gap-5">
-              <div className="w-14 h-14 rounded-xl bg-surface-container-highest text-on-surface flex items-center justify-center shrink-0 shadow-sm border border-outline-variant/50">
-                <span className="material-symbols-outlined text-[28px]" style={{ fontVariationSettings: "'FILL' 1" }}>analytics</span>
+            <div className="flex gap-4 xl:gap-5">
+              <div className="w-12 h-12 xl:w-14 xl:h-14 rounded-xl bg-surface-container-highest text-on-surface flex items-center justify-center shrink-0 shadow-sm border border-outline-variant/50">
+                <span className="material-symbols-outlined text-[24px] xl:text-[28px]" style={{ fontVariationSettings: "'FILL' 1" }}>analytics</span>
               </div>
               <div>
-                <h3 className="text-[17px] font-bold text-on-surface mb-1.5">Advanced Analytics</h3>
-                <p className="text-[15px] text-on-surface-variant leading-relaxed">Gain insights into student performance and assessment quality with AI-powered reporting tools.</p>
+                <h3 className="text-base xl:text-[17px] font-bold text-on-surface mb-1">Advanced Analytics</h3>
+                <p className="text-sm xl:text-[15px] text-on-surface-variant leading-relaxed">Gain insights into student performance and assessment quality with AI-powered reporting tools.</p>
               </div>
             </div>
             
             {/* Feature 3 */}
-            <div className="flex gap-5">
-              <div className="w-14 h-14 rounded-xl bg-tertiary text-on-tertiary flex items-center justify-center shrink-0 shadow-sm">
-                <span className="material-symbols-outlined text-[28px]" style={{ fontVariationSettings: "'FILL' 1" }}>description</span>
+            <div className="flex gap-4 xl:gap-5">
+              <div className="w-12 h-12 xl:w-14 xl:h-14 rounded-xl bg-tertiary text-on-tertiary flex items-center justify-center shrink-0 shadow-sm">
+                <span className="material-symbols-outlined text-[24px] xl:text-[28px]" style={{ fontVariationSettings: "'FILL' 1" }}>description</span>
               </div>
               <div>
-                <h3 className="text-[17px] font-bold text-on-surface mb-1.5">Paper Generator</h3>
-                <p className="text-[15px] text-on-surface-variant leading-relaxed">Automatically generate balanced exam papers aligned with curriculum standards and difficulty constraints.</p>
+                <h3 className="text-base xl:text-[17px] font-bold text-on-surface mb-1">Paper Generator</h3>
+                <p className="text-sm xl:text-[15px] text-on-surface-variant leading-relaxed">Automatically generate balanced exam papers aligned with curriculum standards and difficulty constraints.</p>
               </div>
             </div>
           </div>
