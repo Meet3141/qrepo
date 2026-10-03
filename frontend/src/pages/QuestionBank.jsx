@@ -38,8 +38,7 @@ export default function QuestionBank() {
   const [genParams, setGenParams] = useState({
     subject_id: '',
     unit_id: '',
-    number_of_questions: 5,
-    marks_per_question: 2,
+    mark_distribution: { "1": 0, "2": 5, "3": 0, "4": 0, "5": 0 },
     difficulty: 'MEDIUM',
     question_type: 'MCQ',
     bloom_level: 'APPLY',
@@ -146,8 +145,7 @@ export default function QuestionBank() {
       question_type: genParams.question_type,
       difficulty: genParams.difficulty,
       bloom_level: genParams.bloom_level,
-      number_of_questions: parseInt(genParams.number_of_questions, 10),
-      marks_per_question: parseFloat(genParams.marks_per_question),
+      mark_distribution: genParams.mark_distribution,
       topic: genParams.topic,
       target_audience: genParams.target_audience,
     };
@@ -417,24 +415,26 @@ export default function QuestionBank() {
                 <input type="text" required minLength={2} maxLength={100} placeholder="e.g. 3rd year B.Tech CS students" value={genParams.target_audience} onChange={e => setGenParams({...genParams, target_audience: e.target.value})} className="h-[40px] bg-surface-container border border-outline-variant rounded-lg px-3 outline-none" />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex flex-col gap-1">
-                  <label className="text-sm font-semibold">Questions (1–20)</label>
-                  <input
-                    type="number" min={1} max={20} required
-                    value={genParams.number_of_questions}
-                    onChange={e => setGenParams({...genParams, number_of_questions: e.target.value})}
-                    className="h-[40px] bg-surface-container border border-outline-variant rounded-lg px-3 outline-none"
-                  />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-sm font-semibold">Marks / Question</label>
-                  <input
-                    type="number" min={0.5} max={100} step={0.5} required
-                    value={genParams.marks_per_question}
-                    onChange={e => setGenParams({...genParams, marks_per_question: e.target.value})}
-                    className="h-[40px] bg-surface-container border border-outline-variant rounded-lg px-3 outline-none"
-                  />
+              <div className="flex flex-col gap-2 bg-surface-container-low p-3 rounded-xl border border-outline-variant/50">
+                <label className="text-sm font-semibold mb-1">Mark Distribution (Total: {Object.values(genParams.mark_distribution).reduce((a, b) => a + (parseInt(b) || 0), 0)} / 20)</label>
+                <div className="grid grid-cols-5 gap-2">
+                  {[1, 2, 3, 4, 5].map(marks => (
+                    <div key={marks} className="flex flex-col gap-1 items-center">
+                      <label className="text-[11px] font-medium text-secondary">{marks} Mark{marks > 1 ? 's' : ''}</label>
+                      <input
+                        type="number" min={0} max={20}
+                        value={genParams.mark_distribution[marks] || ''}
+                        onChange={e => {
+                          const val = parseInt(e.target.value) || 0;
+                          setGenParams({
+                            ...genParams, 
+                            mark_distribution: { ...genParams.mark_distribution, [marks]: val }
+                          });
+                        }}
+                        className="h-[36px] w-full bg-surface-container-lowest border border-outline-variant rounded-md px-2 text-center text-sm outline-none"
+                      />
+                    </div>
+                  ))}
                 </div>
               </div>
 
@@ -474,7 +474,7 @@ export default function QuestionBank() {
 
               <div className="flex justify-end gap-2 mt-2">
                 <button type="button" onClick={() => setShowGenModal(false)} className="px-4 py-2 font-medium hover:bg-surface-container rounded-lg">Cancel</button>
-                <button type="submit" disabled={genLoading || !genParams.subject_id || !genParams.topic || !genParams.target_audience} className="px-4 py-2 bg-primary text-on-primary font-medium rounded-lg disabled:opacity-50 flex items-center gap-1">
+                <button type="submit" disabled={genLoading || !genParams.subject_id || !genParams.topic || !genParams.target_audience || Object.values(genParams.mark_distribution).reduce((a, b) => a + (parseInt(b) || 0), 0) < 1 || Object.values(genParams.mark_distribution).reduce((a, b) => a + (parseInt(b) || 0), 0) > 20} className="px-4 py-2 bg-primary text-on-primary font-medium rounded-lg disabled:opacity-50 flex items-center gap-1">
                   {genLoading ? <span className="material-symbols-outlined animate-spin text-[18px]">progress_activity</span> : null}
                   Generate
                 </button>

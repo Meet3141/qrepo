@@ -64,7 +64,13 @@ _TYPE_RULES = {
 
 
 def _constraints(request: QuestionGenerationRequest) -> str:
-    marks = request.marks_per_question
+    # Build mark distribution rules
+    dist_rules = []
+    for marks, count in request.mark_distribution.items():
+        if count > 0:
+            dist_rules.append(f"  * exactly {count} question(s) worth {float(marks):g} marks")
+    dist_str = "\n".join(dist_rules)
+
     return (
         "Constraints (apply to every question):\n"
         f"- question_type: {request.question_type.value}\n"
@@ -72,9 +78,10 @@ def _constraints(request: QuestionGenerationRequest) -> str:
         f"- bloom_level: {request.bloom_level.value}\n"
         "- topic: copy the topic text above verbatim\n"
         f"- question_text: {QUESTION_TEXT_MIN_CHARS}-{QUESTION_TEXT_MAX_CHARS} characters\n"
-        f"- marks: exactly {marks:g} (set by the faculty; do not change this value)\n"
         f"- explanation: optional for written answers, at most {EXPLANATION_MAX_CHARS} characters\n"
-        f"- {_TYPE_RULES[request.question_type]}"
+        f"- {_TYPE_RULES[request.question_type]}\n\n"
+        "Mark Distribution (you MUST strictly follow this exact count for the `marks` field):\n"
+        f"{dist_str}"
     )
 
 

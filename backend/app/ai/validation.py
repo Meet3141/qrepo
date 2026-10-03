@@ -187,7 +187,17 @@ class QuestionValidationEngine:
             issues.append(ValidationIssue(
                 "QUESTION_COUNT", f"expected exactly {request.number_of_questions} questions, got {len(questions)}"))
 
+        # Track marks for distribution validation
+        actual_marks_count = {}
+
         for i, q in enumerate(questions):
+            # Accumulate marks to check distribution
+            m_str = str(float(q.marks)) if q.marks == int(q.marks) else str(q.marks)
+            if q.marks == int(q.marks):
+                 actual_marks_count[str(int(q.marks))] = actual_marks_count.get(str(int(q.marks)), 0) + 1
+            else:
+                 actual_marks_count[str(float(q.marks))] = actual_marks_count.get(str(float(q.marks)), 0) + 1
+
             for name, got, want in (
                 ("question_type", q.question_type, request.question_type),
                 ("difficulty", q.difficulty, request.difficulty),
@@ -197,12 +207,28 @@ class QuestionValidationEngine:
                     issues.append(ValidationIssue(
                         f"{name.upper()}_MISMATCH", f"{name} must be {want.value} (got {got.value})", i))
             
-            if q.marks != request.marks_per_question:
-                issues.append(ValidationIssue("MARKS_MISMATCH", f"marks must be exactly {request.marks_per_question:g} (got {q.marks:g})", i))
-
             if not topics_match(q.topic, request.topic):
                 issues.append(ValidationIssue("TOPIC_MISMATCH", "topic must repeat the requested topic verbatim", i))
             issues.extend(validate_question(q, i))
+
+        # Validate mark distribution
+        expected_distribution = {}
+        for k, v in request.mark_distribution.items():
+            if v > 0:
+                expected_distribution[str(int(float(k))) if float(k) == int(float(k)) else str(float(k))] = expected_distribution.get(str(int(float(k))) if float(k) == int(float(k)) else str(float(k)), 0) + v
+
+        for mark_val, expected_count in expected_distribution.items():
+            actual_count = actual_marks_count.get(mark_val, 0)
+            if actual_count != expected_count:
+                issues.append(ValidationIssue(
+                    "MARK_DISTRIBUTION_MISMATCH", f"Expected exactly {expected_count} question(s) worth {mark_val} marks, but got {actual_count}."
+                ))
+        
+        for mark_val, actual_count in actual_marks_count.items():
+            if mark_val not in expected_distribution:
+                issues.append(ValidationIssue(
+                    "UNEXPECTED_MARKS", f"Generated {actual_count} question(s) worth {mark_val} marks, which was not requested."
+                ))
 
         issues.extend(self._duplicates(questions))
         return issues

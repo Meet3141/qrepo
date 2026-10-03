@@ -110,12 +110,29 @@ class QuestionGenerationRequest(BaseModel):
     topic: str = Field(..., min_length=2, max_length=200)
     target_audience: str = Field(..., min_length=2, max_length=100)
     question_type: QuestionType
-    number_of_questions: int = Field(DEFAULT_QUESTIONS, ge=MIN_QUESTIONS_PER_BATCH, le=MAX_QUESTIONS_PER_BATCH)
     difficulty: Difficulty
     bloom_level: BloomLevel
-    # Uniform marks applied to every question in this batch.
-    # Faculty can override per-question in the review step.
-    marks_per_question: float = Field(DEFAULT_MARKS_PER_QUESTION, ge=0.5, le=100.0)
+    mark_distribution: Dict[str, int] = Field(...)
+
+    @property
+    def number_of_questions(self) -> int:
+        return sum(self.mark_distribution.values())
+
+    @model_validator(mode="after")
+    def _validate_counts(self) -> "QuestionGenerationRequest":
+        total = self.number_of_questions
+        if total < MIN_QUESTIONS_PER_BATCH or total > MAX_QUESTIONS_PER_BATCH:
+            raise ValueError(f"Total questions must be between {MIN_QUESTIONS_PER_BATCH} and {MAX_QUESTIONS_PER_BATCH}")
+        # Validate keys are valid floats > 0
+        for k, v in self.mark_distribution.items():
+            if v > 0:
+                try:
+                    m = float(k)
+                    if m <= 0 or m > 100:
+                        raise ValueError(f"Marks must be between 0.5 and 100 (got {k})")
+                except ValueError:
+                    raise ValueError(f"Invalid mark value: {k}")
+        return self
 
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
