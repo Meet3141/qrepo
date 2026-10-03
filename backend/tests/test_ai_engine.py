@@ -132,17 +132,16 @@ class ConfigurationTests(unittest.TestCase):
 # --------------------------------------------------------------------------
 
 class RequestSchemaTests(unittest.TestCase):
-    def test_defaults_to_five_questions(self):
-        payload = make_request().model_dump()
-        payload.pop("number_of_questions")
-        self.assertEqual(QuestionGenerationRequest(**payload).number_of_questions, 5)
+    def test_number_of_questions_derived(self):
+        req = make_request(mark_distribution={"2": 2, "5": 3})
+        self.assertEqual(req.number_of_questions, 5)
 
-    def test_v1_allows_only_five_or_six(self):
-        for n in (5, 6):
-            self.assertEqual(make_request(number_of_questions=n).number_of_questions, n)
-        for n in (0, 1, 4, 7, 10, -1):
+    def test_v1_allows_up_to_20_questions(self):
+        for n in (1, 5, 20):
+            self.assertEqual(make_request(mark_distribution={"2": n}).number_of_questions, n)
+        for n in (0, 21):
             with self.subTest(n=n), self.assertRaises(ValidationError):
-                make_request(number_of_questions=n)
+                make_request(mark_distribution={"2": n})
 
     def test_client_cannot_supply_prompt_schema_or_model_fields(self):
         for field in ("system_prompt", "system_instruction", "model", "temperature", "prompt_version",
@@ -267,12 +266,7 @@ class GeminiResponseHandlingTests(unittest.TestCase):
         result = provider.generate_questions(PROMPT)
         config = models.calls[0]["config"]
         self.assertEqual(config.response_mime_type, "application/json")
-        # Gemini rejects additionalProperties (live finding, commit 09f9e95), so the provider sends the
-        # model's JSON schema with it stripped; extra fields are still rejected when the output is parsed.
-        self.assertIn("additionalProperties", json.dumps(GeneratedQuestionBatch.model_json_schema()))
-        self.assertNotIn("additionalProperties", json.dumps(config.response_schema))
-        self.assertEqual(config.response_schema["title"], "GeneratedQuestionBatch")
-        self.assertEqual(config.response_schema["required"], ["questions"])
+        self.assertEqual(config.response_schema, GeneratedQuestionBatch)
         self.assertEqual(config.system_instruction, SYSTEM_INSTRUCTION)
         self.assertEqual(config.temperature, 0.3)
         self.assertEqual(config.max_output_tokens, 4096)
@@ -333,7 +327,7 @@ class PromptTests(unittest.TestCase):
                          "<target_audience>\nSecond-year B.Tech CSE\n</target_audience>",
                          "Data Structures (CS201)", "Unit 3: Trees", "Description: BSTs",
                          "<source_material>\nAVL rotations rebalance trees.\n</source_material>",
-                         "exactly 4 distinct", "marks: a number between 0.5 and 5",
+                         "exactly 4 distinct", "Mark Distribution",
                          "`questions` array containing exactly 6"):
             self.assertIn(expected, content)
         for rule in ("assessment author", "JSON object", "Do not introduce facts", "independent constraints",
@@ -368,10 +362,10 @@ class PromptTests(unittest.TestCase):
         self.assertIn("Not specified (subject-level request)", content)
 
     def test_type_specific_rules(self):
-        for qt, markers in ((QuestionType.MCQ, ("correct_option_index", "between 0.5 and 5")),
-                            (QuestionType.TRUE_FALSE, ("['True', 'False']", "between 0.5 and 2")),
-                            (QuestionType.SHORT_ANSWER, ("concise model answer", "between 1 and 10")),
-                            (QuestionType.LONG_ANSWER, ("marking scheme", "between 5 and 30"))):
+        for qt, markers in ((QuestionType.MCQ, ("correct_option_index",)),
+                            (QuestionType.TRUE_FALSE, ("['True', 'False']",)),
+                            (QuestionType.SHORT_ANSWER, ("concise model answer",)),
+                            (QuestionType.LONG_ANSWER, ("marking scheme",))):
             content = build_prompt(make_request(question_type=qt), _context()).user_content
             for marker in markers:
                 with self.subTest(qt=qt, marker=marker):

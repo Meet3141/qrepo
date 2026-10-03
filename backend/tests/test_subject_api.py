@@ -9,6 +9,8 @@ from urllib.error import HTTPError
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
 
+import app.main  # noqa: F401 registers every model on Base.metadata
+
 from app.db.session import SessionLocal
 from app.auth.models import User, Role
 from app.auth.repository import UserRepository

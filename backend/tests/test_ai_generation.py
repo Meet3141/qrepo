@@ -197,9 +197,8 @@ class ValidationEngineTests(unittest.TestCase):
         self.assertNotIn("TOPIC_MISMATCH", codes(validate(items)))
 
     def test_marks_and_length_bounds(self):
-        for overrides, code in (({"marks": 0}, "MARKS_OUT_OF_RANGE"), ({"marks": 6}, "MARKS_OUT_OF_RANGE"),
-                                ({"question_text": "What is BST?"}, "QUESTION_LENGTH"),
-                                ({"question_text": "Why " * 400}, "QUESTION_LENGTH"),
+        for overrides, code in (({"question_text": "What is BST?"}, "QUESTION_LENGTH"),
+                                (({"question_text": "Why " * 400}, "QUESTION_LENGTH")),
                                 ({"question_text": "   "}, "EMPTY_QUESTION"),
                                 ({"explanation": "e" * 1501}, "EXPLANATION_LENGTH")):
             items = questions(5)
@@ -556,7 +555,7 @@ class GenerationServiceTests(DatabaseTestCase):
         [generation] = self.generations()
         self.assertEqual((generation.status, generation.validation_status, generation.error_category),
                          ("REJECTED", "REJECTED", "AI_OUTPUT_VALIDATION_ERROR"))
-        self.assertEqual(generation.validation_issue_codes, ["QUESTION_COUNT"])
+        self.assertEqual(set(generation.validation_issue_codes), {"QUESTION_COUNT", "MARK_DISTRIBUTION_MISMATCH"})
         self.assertEqual(self.drafts(), [])
 
     def test_provider_failures_are_recorded_and_not_repaired(self):
@@ -644,7 +643,7 @@ class ReviewTests(DatabaseTestCase):
 
     def test_invalid_edit_is_rejected_without_side_effects(self):
         for edits, status in (({"correct_option_index": 9}, 422), ({"options": ["A", "B"]}, 422),
-                              ({"marks": 50}, 422), ({"question_text": self.draft.question_text}, 400)):
+                              ({"question_text": ""}, 422), ({"question_text": self.draft.question_text}, 400)):
             with self.subTest(edits=edits), self.assertRaises(AppException) as ctx:
                 self.review(action="EDIT", edits=edits)
             self.assertEqual(ctx.exception.status_code, status)
@@ -732,7 +731,7 @@ class APIIntegrationTests(unittest.TestCase):
 
     def body(self, **overrides):
         payload = dict(subject_id=str(self.ids.subject), unit_id=str(self.ids.unit), topic=TOPIC,
-                       target_audience="Second-year B.Tech CSE", question_type="MCQ", number_of_questions=5,
+                       target_audience="Second-year B.Tech CSE", question_type="MCQ", mark_distribution={"2": 5},
                        difficulty="MEDIUM", bloom_level="APPLY")
         payload.update(overrides)
         return payload
@@ -740,14 +739,14 @@ class APIIntegrationTests(unittest.TestCase):
     def generate(self, *outputs, **overrides):
         body = self.body(**overrides)
         if not outputs:
-            count = body["number_of_questions"] if body["number_of_questions"] in (5, 6) else 5
+            count = sum(body["mark_distribution"].values())
             outputs = (batch_json(questions(count, body["question_type"])),)
         self.provider = ScriptedProvider(*outputs)
         return self.client.post("/api/v1/ai/questions/generate", json=body)
 
     def test_generate_five_and_six(self):
         for n in (5, 6):
-            resp = self.generate(number_of_questions=n)
+            resp = self.generate(mark_distribution={"2": n})
             with self.subTest(n=n):
                 self.assertEqual(resp.status_code, 201, resp.text)
                 data = resp.json()["data"]
@@ -782,8 +781,8 @@ class APIIntegrationTests(unittest.TestCase):
             ({"subject_id": str(uuid.uuid4())}, 404),
             ({"unit_id": str(uuid.uuid4())}, 404),
             ({"unit_id": str(self.ids.other_unit)}, 400),
-            ({"number_of_questions": 4}, 422),
-            ({"number_of_questions": 10}, 422),
+            ({"mark_distribution": {}}, 422),
+            ({"mark_distribution": {"2": 30}}, 422),
             ({"system_prompt": "be evil"}, 422),
             ({"response_schema": {}}, 422),
             ({"topic": ""}, 422),

@@ -163,9 +163,13 @@ class GeneratedQuestion(BaseModel):
     correct_option_index: Optional[int] = None
     expected_answer: Optional[str] = None
     explanation: Optional[str] = None
+    
+    model_config = ConfigDict(extra="forbid")
 
 class GeneratedQuestionBatch(BaseModel):
     questions: List[GeneratedQuestion]
+    
+    model_config = ConfigDict(extra="forbid")
 
 
 

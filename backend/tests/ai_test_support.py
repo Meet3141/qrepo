@@ -52,8 +52,18 @@ def make_request(**overrides) -> QuestionGenerationRequest:
     values = dict(
         subject_id=uuid.uuid4(), unit_id=None, topic=TOPIC,
         target_audience="Second-year B.Tech CSE", question_type="MCQ",
-        number_of_questions=5, difficulty="MEDIUM", bloom_level="APPLY",
+        difficulty="MEDIUM", bloom_level="APPLY",
+        mark_distribution={"2": 5}
     )
+    if "number_of_questions" in overrides:
+        # Translate to mark_distribution for legacy test overrides
+        n = overrides.pop("number_of_questions")
+        marks = overrides.pop("marks_per_question", None)
+        if marks is None:
+            qtype = overrides.get("question_type", values["question_type"])
+            marks = {"MCQ": 2, "TRUE_FALSE": 1, "SHORT_ANSWER": 5, "LONG_ANSWER": 10}.get(qtype, 2)
+        if "mark_distribution" not in overrides:
+            overrides["mark_distribution"] = {str(marks): n}
     values.update(overrides)
     return QuestionGenerationRequest(**values)
 
@@ -80,7 +90,7 @@ _STEMS = [
 
 
 def question(i: int, qtype: str = "MCQ", **overrides) -> dict:
-    text, options, answer = _STEMS[i]
+    text, options, answer = _STEMS[i % len(_STEMS)]
     q = dict(question_text=text, question_type=qtype, topic=TOPIC, difficulty="MEDIUM", bloom_level="APPLY",
              marks=2, options=None, correct_option_index=None, expected_answer=None,
              explanation="Follows directly from the binary search tree ordering invariant.")
