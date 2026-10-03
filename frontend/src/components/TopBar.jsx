@@ -1,10 +1,12 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useSession } from './Session';
+import { useTheme } from './ThemeProvider';
 import { initials as initialsOf } from './ui';
 
 export default function TopBar({ onMenuToggle }) {
   const { user, role } = useSession();
+  const { theme, toggle } = useTheme();
 
   const roleName = role || 'User';
   const displayName = user?.full_name || user?.email || '';
@@ -35,8 +37,18 @@ export default function TopBar({ onMenuToggle }) {
           </div>
         </div>
 
-        {/* Right: Profile */}
+        {/* Right: Theme toggle + Profile */}
         <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            onClick={toggle}
+            className="p-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high transition-colors"
+            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
+          >
+            <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: theme === 'light' ? "'FILL' 1" : "'FILL' 0" }}>
+              {theme === 'dark' ? 'light_mode' : 'dark_mode'}
+            </span>
+          </button>
           <Link
             to="/settings/ai"
             className="flex items-center gap-2 hover:bg-surface-container-high rounded-lg py-1.5 px-2 transition-colors"

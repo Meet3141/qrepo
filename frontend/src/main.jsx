@@ -2,6 +2,7 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { RouterProvider, createBrowserRouter } from 'react-router-dom'
 import { Toaster } from './components/Toast'
+import { ThemeProvider } from './components/ThemeProvider'
 import Layout from './components/Layout'
 import { RequireRole } from './components/Session'
 import { ROLES, STAFF } from './api/session'
@@ -95,7 +96,9 @@ const router = createBrowserRouter([
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <RouterProvider router={router} />
-    <Toaster />
+    <ThemeProvider>
+      <RouterProvider router={router} />
+      <Toaster />
+    </ThemeProvider>
   </React.StrictMode>,
 )

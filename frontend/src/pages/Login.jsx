@@ -4,6 +4,7 @@ import { authService } from '../api/auth';
 import { notifyError } from '../api/errors';
 import { dashboardFor, getRole, getToken } from '../api/session';
 import { toast } from '../components/Toast';
+import { useTheme } from '../components/ThemeProvider';
 
 const NOT_AVAILABLE = {
   sso: 'Single sign-on is not configured for QRepo yet. Please sign in with your email and password.',
@@ -16,6 +17,7 @@ export default function Login() {
   const [remember, setRemember] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { theme, toggle } = useTheme();
 
   // Already signed in: skip the form
   useEffect(() => {
@@ -37,7 +39,19 @@ export default function Login() {
   };
 
   return (
-    <div className="bg-inverse-on-surface min-h-screen flex items-center justify-center p-4 md:p-6 font-body-lg text-body-lg text-on-background antialiased selection:bg-primary-fixed selection:text-on-primary-fixed">
+    <div className="bg-inverse-on-surface min-h-screen flex items-center justify-center p-4 md:p-6 font-body-lg text-body-lg text-on-background antialiased selection:bg-primary-fixed selection:text-on-primary-fixed relative">
+      {/* Theme toggle — floating top-right */}
+      <button
+        onClick={toggle}
+        className="absolute top-4 right-4 p-2 rounded-lg bg-surface-container-lowest border border-outline-variant text-on-surface-variant hover:bg-surface-container-high transition-colors shadow-sm z-20"
+        aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+        title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
+      >
+        <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: theme === 'light' ? "'FILL' 1" : "'FILL' 0" }}>
+          {theme === 'dark' ? 'light_mode' : 'dark_mode'}
+        </span>
+      </button>
+
       {/* Main Container */}
       <main className="w-full max-w-[400px] mx-auto bg-surface-container-lowest border border-outline-variant rounded-[16px] shadow-[0px_4px_6px_-1px_rgba(0,0,0,0.1),0px_2px_4px_-1px_rgba(0,0,0,0.06)] overflow-hidden">
         
