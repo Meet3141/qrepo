@@ -60,6 +60,10 @@ test-results/
 playwright-report/
 blob-report/
 
+# Local-only Alembic migrations (generated on this machine, not for push)
+backend/alembic/versions/fea319c024b0_merge_heads.py
+backend/alembic/versions/debda42ddf7e_add_missing_columns.py
+
 # Databases
 *.db
 *.sqlite
